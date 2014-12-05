@@ -58,3 +58,9 @@
   (let [current-position (player-position level)
         target-position  (to-target-position direction current-position)]
     [current-position direction target-position]))
+
+(defn print-level!
+  "Convenience function for printing a level"
+  [level]
+  (doseq [line level]
+    (println (string/join line))))
