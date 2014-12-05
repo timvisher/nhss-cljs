@@ -16,3 +16,25 @@
   (let [lines (string/split level-string #"\n")
         cells (map (comp (partial apply vector) seq) lines)]
     (into [] cells)))
+
+(defn get-position-string [level position]
+  (let [[x y] position]
+    (nth (nth level y) x)))
+
+(defn position= [level position position-string]
+  (= (get-position-string level position) position-string))
+
+(defn player-position [level]
+  (let [height (count level)
+        width (count (first level))
+        positions (->> (map (fn [y]
+                          (map (fn [x]
+                                 [x,y])
+                               (range width)))
+                            (range height))
+                       (apply concat)
+                       sort)]
+    (loop [[position & next-positions] positions]
+      (if (position= level position "@")
+        position
+        (recur next-positions)))))
