@@ -54,13 +54,25 @@
         [x-diff y-diff] (direction (transformations))]
     [(+ x x-diff) (+ y y-diff)]))
 
-(defn maybe-transform-level [level direction]
-  (let [current-position (player-position level)
-        target-position  (to-target-position direction current-position)]
-    [current-position direction target-position]))
+(defn legal-transformation? [level start-position direction target-position]
+  true)
+
+(defn transform-level [level start-position target-position]
+  (let [start-position-string (get-position-string level start-position)
+        new-level (assoc-in level (reverse target-position) (get-position-string level start-position))
+        new-level (assoc-in new-level (reverse start-position) "·")]
+    new-level))
 
 (defn print-level!
   "Convenience function for printing a level"
   [level]
   (doseq [line level]
     (println (string/join line))))
+
+(defn maybe-transform-level [level start-position direction]
+  (let [target-position (to-target-position direction start-position)]
+    (if (legal-transformation? level start-position direction target-position)
+      (transform-level level start-position target-position)
+      (let [second-target-position (to-target-position direction target-position)]
+        (if (legal-transformation? level target-position direction second-target-position)
+          (transform-level (transform-level level target-position second-target-position) start-position target-position))))))
