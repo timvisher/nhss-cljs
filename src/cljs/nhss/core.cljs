@@ -55,7 +55,15 @@
     [(+ x x-diff) (+ y y-diff)]))
 
 (defn legal-transformation? [level start-position direction target-position]
-  true)
+  (let [target-position-string (get-position-string level target-position)
+        start-position-string (get-position-string level start-position)]
+    (or (and (= "@" start-position-string)
+             (= "·" target-position-string))
+        (and (contains? [:n :s :e :w] direction)
+             (= "0" start-position-string)
+             (or (= "^" target-position-string)
+                 (= "·" target-position-string))))))
+
 
 (defn transform-level [level start-position target-position]
   (let [start-position-string (get-position-string level start-position)
