@@ -63,11 +63,18 @@
         new-level (assoc-in new-level (reverse start-position) "·")]
     new-level))
 
+(defn row-column-ids []
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
 (defn print-level!
   "Convenience function for printing a level"
   [level]
-  (doseq [line level]
-    (println (string/join line))))
+  (println " " (string/join (take (count (first level)) (row-column-ids))))
+  (doseq [[row-id line] (map (fn [row-id line]
+                               [row-id line])
+                             (row-column-ids)
+                             level)]
+    (println row-id (string/join line))))
 
 (defn maybe-transform-level [level start-position direction]
   (let [target-position (to-target-position direction start-position)]
