@@ -49,20 +49,53 @@
    :w  [-1  0]
    :nw [-1 -1]})
 
+(defn apply-position-diff [[x-diff y-diff :as position-diff] [x y :as position]]
+  [(+ x x-diff) (+ y y-diff)])
+
 (defn to-target-position [direction current-position]
-  (let [[x y] current-position
-        [x-diff y-diff] (direction (transformations))]
-    [(+ x x-diff) (+ y y-diff)]))
+  (apply-position-diff (direction (transformations)) current-position))
+
+(defn position-diff [[p1-x p1-y] [p2-x p2-y]]
+  [(- p2-x p1-x) (- p2-y p1-y)])
+
+(defn diagonal-diff? [start-position target-position]
+  (some (partial = (position-diff start-position target-position))
+        (vals (select-keys (transformations) [:ne :se :sw :nw]))))
+
+(defn get-diagonal-path-neighbors [start-position target-position]
+  {:pre [(diagonal-diff? start-position target-position)]}
+  (let [position-diff (position-diff start-position target-position)
+        position-diffs [(assoc-in position-diff [0] 0)
+                        (assoc-in position-diff [1] 0)]]
+    (map apply-position-diff position-diffs (repeat start-position))))
+
+(defn diagonal-path-neighbor-strings [level start-position target-position]
+  {:pre [(diagonal-diff? start-position target-position)]}
+  (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
+    (map (partial get-position-string level) diagonal-neighbor-positions)))
+
+;;; Bug
+;; (-> (:1a (standard-levels))
+;;     (maybe-transform-level ,,, [3 1] :e)
+;;     (maybe-transform-level ,,, [4 1] :e)
+;;     print-level!)
+;; (-> (:1a (standard-levels))
+;;     (maybe-transform-level ,,, [3 1] :e)
+;;     (maybe-transform-level ,,, [4 1] :e)
+;;     (maybe-transform-level ,,, [5 1] :se)
+;;     print-level!)
 
 (defn legal-transformation? [level start-position direction target-position]
   (let [target-position-string (get-position-string level target-position)
         start-position-string (get-position-string level start-position)]
-    (or (and (= "@" start-position-string)
-             (= "·" target-position-string))
-        (and (some (partial = direction) [:n :s :e :w])
-             (= "0" start-position-string)
-             (or (= "^" target-position-string)
-                 (= "·" target-position-string))))))
+    (or (and (some (partial = direction) [:ne :se :sw :nw]) ; This cannot be an or
+             (some (partial = "·") (diagonal-path-neighbor-strings level start-position target-position)))
+        (or (and (= "@" start-position-string)
+                 (= "·" target-position-string))
+            (and (some (partial = direction) [:n :s :e :w])
+                  (= "0" start-position-string)
+                  (or (= "^" target-position-string)
+                      (= "·" target-position-string)))))))
 
 
 (defn transform-level [level start-position target-position]
