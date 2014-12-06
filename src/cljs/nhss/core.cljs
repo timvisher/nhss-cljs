@@ -59,7 +59,7 @@
         start-position-string (get-position-string level start-position)]
     (or (and (= "@" start-position-string)
              (= "·" target-position-string))
-        (and (contains? [:n :s :e :w] direction)
+        (and (some (partial = direction) [:n :s :e :w])
              (= "0" start-position-string)
              (or (= "^" target-position-string)
                  (= "·" target-position-string))))))
