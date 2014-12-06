@@ -1,21 +1,14 @@
 (ns nhss.core
   (:require [clojure.string :as string]
-            [cognitect.transit :as t]))
+            [cognitect.transit :as t]
+            [nhss.levels :as levels]))
 
-(defn standard-levels-string []
-  ;; Fudge for now so I don't need to bring a server up that I can
-  ;; request from.
-  ;; See nhss/core.clj:write-transit-levels-to-string
-  "[\"^ \",\"~:1a\",\"┌─┬────┐ ┌────┐\\n│<│@···└─┘····│\\n│^├┐·00····0··│\\n│^││··00│·0·0·│\\n│^││····│·····│\\n│^│└───┬┘0────┤\\n│^│    │······│\\n│^└────┘······│\\n│··^^^^0000···│\\n│··┌───┐······│\\n└──┘   └──────┘\",\"~:1b\",\"┌────┐  ┌───┐ \\n│····│  │···│ \\n│·0··└──┘·0·│ \\n│·0······0··│ \\n│··┌─┐@┌─┐0·│ \\n├──┴─┴─┼─┘·─┴┐\\n│··^^^<│·····│\\n│··┌───┤0····│\\n└┐^│   │·0···│\\n │^└───┘·0···│\\n │··^^^^0·0··│\\n │··┌────────┘\\n └──┘         \",\"~:2a\",\" ┌──┐          ┌─────────┐\\n┌┘·@└──────┐   │·········│\\n│··········│   │·········│\\n│·0┌───┐0─·│   │·········│\\n│··│···│·0·│   │····<····│\\n│·0·0····0─┤   │·········│\\n│·0··0··│··│   │·········│\\n│·────0·└┐·│   │·········│\\n│··0···0·│·└┐  │·········│\\n│·──┬0─···0·└──┴────────+┤\\n│···│··0─·0·^^^^^^^^^^^^·│\\n│··0······┌──────────────┘\\n└───┐··│··│               \\n    └──┴──┘               \",\"~:2b\",\"┌────┬────┐       ┌─────────┐\\n│····│····└─┐     │·········│\\n│··00│00···@│     │·········│\\n│·····0···┌─┘     │·········│\\n│····│····│       │····<····│\\n├─·──┼────┴┐      │·········│\\n│··0·│·····│      │·········│\\n│·00·│0·0·0│      │·········│\\n│··0·····0·│      │·········│\\n│·000│0··0·└───────────────+┤\\n│····│··0·0·^^^^^^^^^^^^^^^·│\\n└────┴──────────────────────┘\",\"~:3a\",\"  ┌─┬────┐          \\n┌─┘·│····│          \\n│···0····├─┬───────┐\\n│·─·00─00│·│·······│\\n│·00─······│·······│\\n│·─··0·│···│·······│\\n│····─0├─0─┤···<···│\\n│··00··0···│·······│\\n│·──···─···│·······│\\n│····─0┬───┤·······│\\n└─┐··0·└───┴──────+┤\\n  │··0@^^^^^^^^^^^·│\\n  └────────────────┘\",\"~:3b\",\"┌────────┬───┬─────┐\\n│········│···│·····│\\n│·00··─00│·─·│·····│\\n│··│·0·0·│00·│·····│\\n│─·│··─··│·─·│··<··│\\n│···│─·······│·····│\\n│···│·0·─···┌┤·····│\\n│·0·│0·│···┌┘│·····│\\n├─0·│··└───┴─┴────+┤\\n│··0····^^^^^^^^^^·│\\n│···│·@┌───────────┘\\n└───┴──┘            \",\"~:4a\",\"┌────────────────────────┐\\n│@······^^^^^^^^^^^^^^^^·│\\n│·······┌──────────────┐·│\\n└┬─────·└────┐         │·│\\n │···········│         │·│\\n │·0·0·0·0·0·│         │·│\\n┌┴──────·────┤         │·│\\n│···0·0··0·0·│         │·│\\n│···0········│         │·│\\n└┬───·──────┬┘   ┌─────┤·│\\n │··0·0·0···│  ┌─┤·····│·│\\n │·····0····│  │·+·····│·│\\n │·0·0···0·┌┘  ├─┤·····│·│\\n┌┴─────·─┬─┘   │·+·····+·│\\n│··0·····│     ├─┤·····├─┘\\n│········│     │·+·····│  \\n│···┌────┘     └─┤·····│  \\n└───┘            └─────┘  \",\"~:4b\",\"  ┌──────────────────────┐\\n  │··^^^^^^^^^^^^^^^^^^··│\\n  │··┌────────┬────────┐·│\\n┌─┴┐·│    ┌───┤        │·│\\n│··│0└┐  ┌┘···│        │·│\\n│·····├──┤·0··│        │·│\\n│·00··│··│··0·│        │·│\\n└┐··00│···00·┌┘        │·│\\n │0··0···│0··│   ┌─────┤·│\\n │·00·│··│··0│ ┌─┤·····│·│\\n │·0·0└──┤·0·│ │·+·····│·│\\n │·······│··┌┘ ├─┤·····│·│\\n └──┐·0··│·┌┘  │·+·····+·│\\n    └┬─·─┘·│   ├─┤·····├─┘\\n     │·0···│   │·+·····│  \\n     │@·│··│   └─┤·····│  \\n     └──┴──┘     └─────┘  \"]")
-
-(defn standard-levels []
-  (->> (standard-levels-string)
-       (t/read (t/reader :json))))
-
-(defn read-level [level-string]
-  (let [lines (string/split level-string #"\n")
-        cells (map (comp (partial apply vector) seq) lines)]
-    (into [] cells)))
+(defn level-features []
+  {:down-stair      ">"
+   :space           "·"
+   :boulder         "0"
+   :hole            "^"
+   :player          "@"})
 
 (defn get-position-string [level position]
   (let [[x y] position]
@@ -28,14 +21,14 @@
   (let [height (count level)
         width (count (first level))
         positions (->> (map (fn [y]
-                          (map (fn [x]
-                                 [x,y])
-                               (range width)))
+                              (map (fn [x]
+                                     [x,y])
+                                   (range width)))
                             (range height))
                        (apply concat)
                        sort)]
     (loop [[position & next-positions] positions]
-      (if (position= level position "@")
+      (if (position= level position (:player (level-features)))
         position
         (recur next-positions)))))
 
@@ -79,11 +72,11 @@
   o)
 
 (defn transformations-whitelist []
-  {:cardinal      {"@" {"·" "@"}
-                   "0" {"·" "0"
-                        "^" "0"}}
-   :intercardinal {"@" {(sort ["·" "0"]) {"·" "@"}
-                        ["·" "·"]        {"·" "@"}}}})
+  {:cardinal      {(:player (level-features)) {(:space (level-features)) (:player (level-features))}
+                   (:boulder (level-features)) {(:space (level-features)) (:boulder (level-features))
+                                                (:hole (level-features)) (:boulder (level-features))}}
+   :intercardinal {(:player (level-features)) {(sort [(:space (level-features)) (:boulder (level-features))]) {(:space (level-features)) (:player (level-features))}
+                                               [(:space (level-features)) (:space (level-features))]        {(:space (level-features)) (:player (level-features))}}}})
 
 (defn direction-kind [direction]
   (let [cardinal (select-keys (transformations) [:n :s :e :w])]
@@ -103,7 +96,7 @@
 (defn transform-level [level start-position target-position]
   (let [start-position-string (get-position-string level start-position)
         new-level (assoc-in level (reverse target-position) (get-position-string level start-position))
-        new-level (assoc-in new-level (reverse start-position) "·")]
+        new-level (assoc-in new-level (reverse start-position) (:space (level-features)))]
     new-level))
 
 (defn row-column-ids []
