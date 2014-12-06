@@ -72,30 +72,32 @@
 (defn diagonal-path-neighbor-strings [level start-position target-position]
   {:pre [(diagonal-diff? start-position target-position)]}
   (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
-    (map (partial get-position-string level) diagonal-neighbor-positions)))
+    (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
 
-;;; Bug
-;; (-> (:1a (standard-levels))
-;;     (maybe-transform-level ,,, [3 1] :e)
-;;     (maybe-transform-level ,,, [4 1] :e)
-;;     print-level!)
-;; (-> (:1a (standard-levels))
-;;     (maybe-transform-level ,,, [3 1] :e)
-;;     (maybe-transform-level ,,, [4 1] :e)
-;;     (maybe-transform-level ,,, [5 1] :se)
-;;     print-level!)
+(defn trace! [o]
+  (println "TRACE: " o)
+  o)
+
+(defn transformations-whitelist []
+  {:cardinal      {"@" {"·" "@"}
+                   "0" {"·" "0"
+                        "^" "0"}}
+   :intercardinal {"@" {(sort ["·" "0"]) {"·" "@"}
+                        ["·" "·"]        {"·" "@"}}}})
+
+(defn direction-kind [direction]
+  (let [cardinal (select-keys (transformations) [:n :s :e :w])]
+    (if (contains? cardinal direction)
+      :cardinal
+      :intercardinal)))
 
 (defn legal-transformation? [level start-position direction target-position]
+  {:pre [(= (direction (transformations)) (position-diff start-position target-position))]}
   (let [target-position-string (get-position-string level target-position)
         start-position-string (get-position-string level start-position)]
-    (or (and (some (partial = direction) [:ne :se :sw :nw]) ; This cannot be an or
-             (some (partial = "·") (diagonal-path-neighbor-strings level start-position target-position)))
-        (or (and (= "@" start-position-string)
-                 (= "·" target-position-string))
-            (and (some (partial = direction) [:n :s :e :w])
-                  (= "0" start-position-string)
-                  (or (= "^" target-position-string)
-                      (= "·" target-position-string)))))))
+    (if (= :cardinal (direction-kind direction))
+      (get-in (transformations-whitelist) [(direction-kind direction) start-position-string target-position-string])
+      (get-in (transformations-whitelist) [(direction-kind direction) start-position-string (diagonal-path-neighbor-strings level start-position target-position) target-position-string]))))
 
 
 (defn transform-level [level start-position target-position]
