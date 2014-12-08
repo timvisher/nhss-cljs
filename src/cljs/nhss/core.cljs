@@ -12,7 +12,7 @@
 
 (defn get-position-string [level position]
   (let [[x y] position]
-    (nth (nth level y) x)))
+    (nth (nth (:cells level) y) x)))
 
 (defn position= [level position position-string]
   (= (get-position-string level position) position-string))
@@ -105,11 +105,11 @@
 (defn print-level!
   "Convenience function for printing a level"
   [level]
-  (println " " (string/join (take (count (first level)) (row-column-ids))))
+  (println " " (string/join (take (count (first (:cells level))) (row-column-ids))))
   (doseq [[row-id line] (map (fn [row-id line]
                                [row-id line])
                              (row-column-ids)
-                             level)]
+                             (:cells level))]
     (println row-id (string/join line))))
 
 (defn maybe-transform-level [level start-position direction]
