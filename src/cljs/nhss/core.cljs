@@ -18,8 +18,8 @@
   (= (get-position-string level position) position-string))
 
 (defn player-position [level]
-  (let [height (count level)
-        width (count (first level))
+  (let [height (count (:cells level))
+        width (count (first (:cells level)))
         positions (->> (map (fn [y]
                               (map (fn [x]
                                      [x,y])
