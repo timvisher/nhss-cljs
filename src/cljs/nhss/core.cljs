@@ -68,7 +68,7 @@
     (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
 
 (defn trace! [o]
-  (println "TRACE: " o)
+  (println "TRACE: " (pr-str o))
   o)
 
 (defn transformations-whitelist []
