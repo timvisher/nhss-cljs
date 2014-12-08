@@ -32,7 +32,7 @@
         position
         (recur next-positions)))))
 
-(defn transformations []
+(defn directional-position-diffs []
   {:n  [ 0 -1]
    :ne [ 1 -1]
    :e  [ 1  0]
@@ -46,14 +46,14 @@
   [(+ x x-diff) (+ y y-diff)])
 
 (defn to-target-position [direction current-position]
-  (apply-position-diff (direction (transformations)) current-position))
+  (apply-position-diff (direction (directional-position-diffs)) current-position))
 
 (defn position-diff [[p1-x p1-y] [p2-x p2-y]]
   [(- p2-x p1-x) (- p2-y p1-y)])
 
 (defn diagonal-diff? [start-position target-position]
   (some (partial = (position-diff start-position target-position))
-        (vals (select-keys (transformations) [:ne :se :sw :nw]))))
+        (vals (select-keys (directional-position-diffs) [:ne :se :sw :nw]))))
 
 (defn get-diagonal-path-neighbors [start-position target-position]
   {:pre [(diagonal-diff? start-position target-position)]}
@@ -81,7 +81,7 @@
                      (:player (level-features))}}}})
 
 (defn direction-kind [direction]
-  (let [cardinal (select-keys (transformations) [:n :s :e :w])]
+  (let [cardinal (select-keys (directional-position-diffs) [:n :s :e :w])]
     (if (contains? cardinal direction)
       :cardinal
       :intercardinal)))
@@ -92,9 +92,9 @@
        (filter (partial = (:space (level-features))))
        first))
 
-;;; TODO This functions a mess. :(
+;;; TODO This function's a mess. :(
 (defn legal-transformation? [level start-position direction target-position]
-  {:pre [(= (direction (transformations))
+  {:pre [(= (direction (directional-position-diffs))
             (position-diff start-position target-position))]}
   (let [target-position-string (get-position-string level target-position)
         start-position-string  (get-position-string level start-position)]
@@ -128,8 +128,9 @@
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
   [level start-position target-position]
-  ;; {:pre [(= (:space (level-features))
-  ;;           (get-position-string level target-position))]}
+  {:pre [(contains? (simple-transformations)
+                    [(get-position-string level start-position)
+                     (get-position-string level target-position)])]}
   (let [start-position-string      (get-position-string level start-position)
         new-start-position-string  (:covered-cell level)
         target-position-string     (get-position-string level target-position)
