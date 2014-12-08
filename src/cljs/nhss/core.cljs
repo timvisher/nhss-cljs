@@ -117,6 +117,11 @@
                          (reverse position)
                          position-string))))
 
+(defn simple-transformations []
+  {[(:boulder (level-features)) (:hole (level-features))] (:space (level-features))
+   [(:player (level-features)) (:space (level-features))] (:player (level-features))
+   [(:boulder (level-features)) (:space (level-features))] (:boulder (level-features))})
+
 ;;; TODO this needs to be expanded. currently doesn't handle boulder
 ;;; dropping down a hole
 (defn transform-level
@@ -128,7 +133,7 @@ legal-transformation?"
   (let [start-position-string      (get-position-string level start-position)
         new-start-position-string  (:covered-cell level)
         target-position-string     (get-position-string level target-position)
-        new-target-position-string start-position-string
+        new-target-position-string (get (simple-transformations) [start-position-string target-position-string])
         new-covered-cell           target-position-string
         new-level                  (set-position-string level
                                                         target-position
@@ -161,4 +166,6 @@ legal-transformation?"
       (transform-level level start-position target-position)
       (let [second-target-position (to-target-position direction target-position)]
         (if (legal-transformation? level target-position direction second-target-position)
-          (transform-level (transform-level level target-position second-target-position) start-position target-position))))))
+          (-> level
+              (transform-level target-position second-target-position)
+              (transform-level start-position target-position)))))))
