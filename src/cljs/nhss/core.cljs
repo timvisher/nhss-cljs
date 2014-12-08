@@ -1,7 +1,9 @@
 (ns nhss.core
+  (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [clojure.string :as string]
             [cognitect.transit :as t]
-            [nhss.levels :as levels]))
+            [nhss.levels :as levels]
+            [cljs.core.async :refer [<! >!]]))
 
 (defn level-features []
   {:down-stair      ">"
@@ -169,3 +171,19 @@ legal-transformation?"
           (-> level
               (transform-level target-position second-target-position)
               (transform-level start-position target-position)))))))
+
+(defn make-nhss-process
+  "Takes proposed transformations of levels and outputs them or errors
+they produced to output-chan.
+
+input-chan should take messages of the form {:level l :direction d}.
+
+output-chan will contain messages of the form {:level l :errors e}."
+  [input-chan output-chan]
+  (go
+    (while true
+      (let [{:keys [level direction]} (<! input-chan)]
+        (let [new-level (maybe-transform-level level (player-position level) direction)]
+          (if new-level
+            (>! output-chan new-level)
+            (>! output-chan {:level level :errors []})))))))
