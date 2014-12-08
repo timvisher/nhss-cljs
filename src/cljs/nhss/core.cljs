@@ -75,8 +75,10 @@
   {:cardinal      {(:player (level-features)) {(:space (level-features)) (:player (level-features))}
                    (:boulder (level-features)) {(:space (level-features)) (:boulder (level-features))
                                                 (:hole (level-features)) (:boulder (level-features))}}
-   :intercardinal {(:player (level-features)) {(sort [(:space (level-features)) (:boulder (level-features))]) {(:space (level-features)) (:player (level-features))}
-                                               [(:space (level-features)) (:space (level-features))]        {(:space (level-features)) (:player (level-features))}}}})
+   :intercardinal {(:player (level-features))
+                   {(:space (level-features))
+                    {(:space (level-features))
+                     (:player (level-features))}}}})
 
 (defn direction-kind [direction]
   (let [cardinal (select-keys (transformations) [:n :s :e :w])]
@@ -84,19 +86,33 @@
       :cardinal
       :intercardinal)))
 
+(defn some-diagonal-path-neighbor-space [level start-position target-position]
+  {:pre [(diagonal-diff? start-position target-position)]}
+  (->> (diagonal-path-neighbor-strings level start-position target-position)
+       (filter (partial = (:space (level-features))))
+       first))
+
 (defn legal-transformation? [level start-position direction target-position]
   {:pre [(= (direction (transformations))
             (position-diff start-position target-position))]}
   (let [target-position-string (get-position-string level target-position)
         start-position-string  (get-position-string level start-position)]
     (if (= :cardinal (direction-kind direction))
-      (get-in (transformations-whitelist) [(direction-kind direction) start-position-string target-position-string])
-      (get-in (transformations-whitelist) [(direction-kind direction) start-position-string (diagonal-path-neighbor-strings level start-position target-position) target-position-string]))))
+      (get-in (transformations-whitelist)
+              [(direction-kind direction)
+               start-position-string
+               target-position-string])
+      (or (get-in (transformations-whitelist)
+                  [(direction-kind direction)
+                   start-position-string
+                   (some-diagonal-path-neighbor-space level start-position target-position)
+                   target-position-string])
+          ))))
 
 (defn transform-level [level start-position target-position]
   (let [start-position-string (get-position-string level start-position)
-        new-level (assoc-in level (reverse target-position) (get-position-string level start-position))
-        new-level (assoc-in new-level (reverse start-position) (:space (level-features)))]
+        new-level (assoc-in level (conj (reverse target-position) :cells) (get-position-string level start-position))
+        new-level (assoc-in new-level (conj (reverse start-position) :cells) (:space (level-features)))]
     new-level))
 
 (defn row-column-ids []
@@ -113,6 +129,9 @@
     (println row-id (string/join line))))
 
 (defn maybe-transform-level [level start-position direction]
+  {:pre [(let [direction-whitelist ((direction-kind direction) (transformations-whitelist))
+               start-position-string (get-position-string level start-position)]
+           (contains? direction-whitelist start-position-string))]}
   (let [target-position (to-target-position direction start-position)]
     (if (legal-transformation? level start-position direction target-position)
       (transform-level level start-position target-position)
