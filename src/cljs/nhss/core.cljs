@@ -185,5 +185,5 @@ output-chan will contain messages of the form {:level l :errors e}."
       (let [{:keys [level direction]} (<! input-chan)]
         (let [new-level (maybe-transform-level level (player-position level) direction)]
           (if new-level
-            (>! output-chan new-level)
+            (>! output-chan {:level new-level})
             (>! output-chan {:level level :errors []})))))))
