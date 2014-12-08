@@ -92,6 +92,7 @@
        (filter (partial = (:space (level-features))))
        first))
 
+;;; TODO This functions a mess. :(
 (defn legal-transformation? [level start-position direction target-position]
   {:pre [(= (direction (transformations))
             (position-diff start-position target-position))]}
