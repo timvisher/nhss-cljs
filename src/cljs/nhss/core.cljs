@@ -103,12 +103,11 @@
               [(direction-kind direction)
                start-position-string
                target-position-string])
-      (or (get-in (transformations-whitelist)
-                  [(direction-kind direction)
-                   start-position-string
-                   (some-diagonal-path-neighbor-space level start-position target-position)
-                   target-position-string])
-          ))))
+      (get-in (transformations-whitelist)
+              [(direction-kind direction)
+               start-position-string
+               (some-diagonal-path-neighbor-space level start-position target-position)
+               target-position-string]))))
 
 (defn set-position-string [level position position-string]
   (update-in level [:cells]
