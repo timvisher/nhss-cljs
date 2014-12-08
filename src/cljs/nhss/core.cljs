@@ -85,13 +85,13 @@
       :intercardinal)))
 
 (defn legal-transformation? [level start-position direction target-position]
-  {:pre [(= (direction (transformations)) (position-diff start-position target-position))]}
+  {:pre [(= (direction (transformations))
+            (position-diff start-position target-position))]}
   (let [target-position-string (get-position-string level target-position)
-        start-position-string (get-position-string level start-position)]
+        start-position-string  (get-position-string level start-position)]
     (if (= :cardinal (direction-kind direction))
       (get-in (transformations-whitelist) [(direction-kind direction) start-position-string target-position-string])
       (get-in (transformations-whitelist) [(direction-kind direction) start-position-string (diagonal-path-neighbor-strings level start-position target-position) target-position-string]))))
-
 
 (defn transform-level [level start-position target-position]
   (let [start-position-string (get-position-string level start-position)
