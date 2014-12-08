@@ -110,10 +110,33 @@
                    target-position-string])
           ))))
 
-(defn transform-level [level start-position target-position]
-  (let [start-position-string (get-position-string level start-position)
-        new-level (assoc-in level (conj (reverse target-position) :cells) (get-position-string level start-position))
-        new-level (assoc-in new-level (conj (reverse start-position) :cells) (:space (level-features)))]
+(defn set-position-string [level position position-string]
+  (update-in level [:cells]
+             (fn [cells]
+               (assoc-in cells
+                         (reverse position)
+                         position-string))))
+
+;;; TODO this needs to be expanded. currently doesn't handle boulder
+;;; dropping down a hole
+(defn transform-level
+  "Assumes caller has already checked validity of transformation with
+legal-transformation?"
+  [level start-position target-position]
+  ;; {:pre [(= (:space (level-features))
+  ;;           (get-position-string level target-position))]}
+  (let [start-position-string      (get-position-string level start-position)
+        new-start-position-string  (:covered-cell level)
+        target-position-string     (get-position-string level target-position)
+        new-target-position-string start-position-string
+        new-covered-cell           target-position-string
+        new-level                  (set-position-string level
+                                                        target-position
+                                                        new-target-position-string)
+        new-level                  (set-position-string new-level
+                                                        start-position
+                                                        new-start-position-string)
+        new-level                  (assoc new-level :covered-cell new-covered-cell)]
     new-level))
 
 (defn row-column-ids []
