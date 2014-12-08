@@ -13,8 +13,3 @@
 
 (defn standard-level [level-id]
   (level-id (standard-levels)))
-
-(defn read-level [level-string]
-  (let [lines (string/split level-string #"\n")
-        cells (map (comp (partial apply vector) seq) lines)]
-    (into [] cells)))
