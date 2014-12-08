@@ -1,7 +1,6 @@
 (ns nhss.ui
-  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [goog.events :as events]
-            [cljs.core.async :refer [put! chan <!!]])
+            [cljs.core.async :refer [put! chan]])
   (:import [goog.events KeyCodes]))
 
 (defn keys []
@@ -34,7 +33,4 @@
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (put! event-chan (event->key e))))
-    (go-loop [key (<! event-chan)]
-      (.log js/console key)
-      (recur (<! event-chan)))))
+                     (put! event-chan (event->key e))))))
