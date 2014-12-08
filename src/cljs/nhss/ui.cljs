@@ -9,7 +9,7 @@
    KeyCodes/J              :s
    KeyCodes/K              :n
    KeyCodes/L              :e
-   KeyCodes/Y              :ny
+   KeyCodes/Y              :nw
    KeyCodes/U              :ne
    KeyCodes/B              :sw
    KeyCodes/N              :se
