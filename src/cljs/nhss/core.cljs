@@ -5,11 +5,8 @@
             [nhss.levels         :as levels]
             [nhss.ui             :as ui]
 
-            [nhss.util           :refer [js-trace!]]))
+            [nhss.util           :refer [js-trace! trace!]]))
 
-(let [key-chan (ui/init (levels/standard-level :1a))]
-  (go-loop []
-    (let [key (a/<! key-chan)
-          level (ui/read-level)]
-      (js-trace! key))
-    (recur)))
+(let [new-level-chan       (a/chan)
+      command-chan         (ui/init (levels/standard-level :1a) new-level-chan)]
+  (transformation/make-nhss-process command-chan new-level-chan))

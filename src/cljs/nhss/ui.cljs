@@ -1,10 +1,12 @@
 (ns nhss.ui
-  (:require [goog.events     :as events]
-            [cljs.core.async :as a]
-            [clojure.string  :as string]
-            [nhss.levels     :as levels]
+  (:require-macros [cljs.core.async.macros :as am])
+  (:require [goog.events         :as events]
+            [cljs.core.async     :as a]
+            [clojure.string      :as string]
+            [nhss.levels         :as levels]
+            [nhss.transformation :as transformation]
 
-            [nhss.util :refer [js-trace!]])
+            [nhss.util :refer [js-trace! trace!]])
   (:import [goog.events KeyCodes]))
 
 (defn movement-keys []
@@ -27,28 +29,36 @@
    KeyCodes/NUM_WEST       :w
    KeyCodes/NUM_NORTH      :n
    KeyCodes/NUM_EAST       :e
-   KeyCodes/NKUM_SOUTH     :s})
+   KeyCodes/NUM_SOUTH      :s})
 
 (defn event->key [e]
   (get (movement-keys) (.-keyCode e) :key-not-found))
 
 (defn read-level []
-  (let [lines (string/split (.-textContent (.getElementById js/document "level")) #"\n")
-        cells (into [] (map (comp (partial apply vector) seq) lines))
-        title "NetHack Sokoban 1a"
-        covered-cell ">"
-        info ""]
-    (js-trace! {:cells cells
-      :title title
-      :covered-cell covered-cell
-      :info info})))
+  (let [level-string         (.-textContent (.getElementById js/document "level"))
+        [title info & lines] (string/split level-string #"\n")
+        cells                (into [] (map (comp (partial apply vector) seq) lines))
+        title                title
+        info                 info]
+    {:cells        cells
+     :title        title
+     :info         info}))
 
-(defn init [level]
+(defn key->command [key]
+  {:level (read-level)
+   :direction key})
+
+(defn init [level new-level-chan]
   (set! (.-textContent (.getElementById js/document "level")) (levels/->string level))
+  (am/go-loop []
+    (let [new-level (a/<! new-level-chan)]
+      (set! (.-textContent (.getElementById js/document "level")) (levels/->string (:level new-level))))
+    (recur))
   (let [event-chan (a/chan)
-        key-chan   (a/filter< (apply hash-set (vals (movement-keys))) event-chan)]
+        key-chan   (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
+        command-chan (a/map< key->command key-chan)]
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
                      (a/put! event-chan (event->key e))))
-    key-chan))
+    command-chan))

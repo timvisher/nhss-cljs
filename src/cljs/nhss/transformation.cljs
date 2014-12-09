@@ -1,16 +1,19 @@
 (ns nhss.transformation
-  (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [clojure.string :as string]
+  (:require-macros [cljs.core.async.macros :as am])
+  (:require [clojure.string    :as string]
             [cognitect.transit :as t]
-            [nhss.levels :as levels]
-            [cljs.core.async :refer [<! >!]]))
+            [nhss.levels       :as levels]
+            [cljs.core.async   :as a]
+
+            [nhss.util :refer [js-trace! trace!]]))
 
 (defn level-features []
-  {:down-stair      ">"
-   :space           "·"
-   :boulder         "0"
-   :hole            "^"
-   :player          "@"})
+  {:down-stair ">"
+   :up-stair   "<"
+   :space      "·"
+   :boulder    "0"
+   :hole       "^"
+   :player     "@"})
 
 (defn get-position-string [level position]
   (let [[x y] position]
@@ -119,8 +122,21 @@
    [(:player (level-features)) (:space (level-features))] (:player (level-features))
    [(:boulder (level-features)) (:space (level-features))] (:boulder (level-features))})
 
-;;; TODO this needs to be expanded. currently doesn't handle boulder
-;;; dropping down a hole
+(defn has-down-stair? [level-string]
+  (some (partial = (:down-stair (level-features))) level-string))
+
+(defn has-up-stair? [level-string]
+  (some (partial = (:up-stair (level-features))) level-string))
+
+;;; TODO this function has to be possible to simplify!
+(defn covered-cell [level-string]
+  (if (and (has-down-stair? level-string)
+           (has-up-stair? level-string))
+    (:space (level-features))
+    (if (has-down-stair? level-string)
+      (:up-stair (level-features))
+      (:down-stair (level-features)))))
+
 (defn transform-level
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
@@ -129,7 +145,7 @@ legal-transformation?"
                     [(get-position-string level start-position)
                      (get-position-string level target-position)])]}
   (let [start-position-string      (get-position-string level start-position)
-        new-start-position-string  (:covered-cell level)
+        new-start-position-string  (covered-cell (levels/->string level))
         target-position-string     (get-position-string level target-position)
         new-target-position-string (get (simple-transformations) [start-position-string target-position-string])
         new-covered-cell           target-position-string
@@ -138,8 +154,7 @@ legal-transformation?"
                                                         new-target-position-string)
         new-level                  (set-position-string new-level
                                                         start-position
-                                                        new-start-position-string)
-        new-level                  (assoc new-level :covered-cell new-covered-cell)]
+                                                        new-start-position-string)]
     new-level))
 
 (defn row-column-ids []
@@ -176,10 +191,10 @@ input-chan should take messages of the form {:level l :direction d}.
 
 output-chan will contain messages of the form {:level l :errors e}."
   [input-chan output-chan]
-  (go
-    (while true
-      (let [{:keys [level direction]} (<! input-chan)]
-        (let [new-level (maybe-transform-level level (player-position level) direction)]
-          (if new-level
-            (>! output-chan {:level new-level})
-            (>! output-chan {:level level :errors []})))))))
+  (am/go-loop []
+    (let [{:keys [level direction]} (a/<! input-chan)]
+      (let [new-level (maybe-transform-level level (player-position level) direction)]
+        (if new-level
+          (a/>! output-chan {:level new-level})
+          (a/>! output-chan {:level level :errors []}))))
+    (recur)))

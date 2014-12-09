@@ -8,12 +8,10 @@
 
 (defn read-level [level-string]
   (let [[title info & lines] (string/split level-string #"\n")
-        cells (into [] (map (comp (partial apply vector) seq) lines))
-        covered-cell ">"]
-    {:cells        cells
-     :title        title
-     :info         info
-     :covered-cell covered-cell}))
+        cells (into [] (map (comp (partial apply vector) seq) lines))]
+    {:cells cells
+     :title title
+     :info  info}))
 
 (defn transit-write-to-out [levels out]
   (t/write (t/writer out :json) levels))

@@ -1,6 +1,10 @@
 (ns nhss.levels
   (:require [cognitect.transit :as t]
-            [clojure.string    :as string]))
+            [clojure.string    :as string]
+            [goog.string       :as gstring]
+            [goog.string.format]
+
+            [nhss.util :refer [js-trace! trace!]]))
 
 (defn standard-levels-string []
   ;; Fudge for now so I don't need to bring a server up that I can
@@ -16,4 +20,7 @@
   (level-id (standard-levels)))
 
 (defn ->string [level]
-  (string/join "\n" (map string/join (:cells level))))
+  (gstring/format "%s\n%s\n%s"
+                  (:title level)
+                  (:info level)
+                  (string/join "\n" (map string/join (:cells level)))))
