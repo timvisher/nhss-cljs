@@ -103,7 +103,6 @@
        (< y (count cells))))
 
 ;;; TODO This function's a mess. :(
-;;; FIXME doesn't return true if onto or diagonally past a stair
 (defn legal-transformation? [level start-position direction target-position]
   {:pre [(= (direction (directional-position-diffs))
             (position-diff start-position target-position))]}
@@ -143,14 +142,22 @@
 ;;; TODO this function has to be possible to simplify!
 ;;; FIXME doesn't know how to handle levels with no up stair
 (defn covered-cell [level-string]
-  (if (and (has-down-stair? level-string)
-           (has-up-stair? level-string))
-    (:space (level-features))
-    (if (has-down-stair? level-string)
-      (:up-stair (level-features))
-      (:down-stair (level-features)))))
+  (comment                              ; for now, cheat and return space again.
+    (if (and (has-down-stair? level-string)
+             (has-up-stair? level-string))
+      (:space (level-features))
+      (if (has-down-stair? level-string)
+        (:up-stair (level-features))
+        (:down-stair (level-features)))))
+  (:space (level-features)))
 
-(comment                                ; FIXME
+(comment
+  ;; This broke when assuming that you could always see an up stair or
+  ;; a down stair. It dropped an up stair in behind everything that
+  ;; moved.
+  ;;
+  ;; To fix, we're going to have to track the covered cell, I think.
+  ;; So back to levels carrying around a :covered-cell key
   (-> (levels/standard-level :4b)
       (maybe-transform-level [6 15] :e)
       (maybe-transform-level [7 15] :n))
