@@ -93,22 +93,29 @@
        (filter (partial = (:space (level-features))))
        first))
 
+(defn valid-position? [{:keys [cells]} [x y :as position]]
+  (and (every? pos? position)
+       (< x (count (first cells)))
+       (< y (count cells))))
+
 ;;; TODO This function's a mess. :(
 (defn legal-transformation? [level start-position direction target-position]
   {:pre [(= (direction (directional-position-diffs))
             (position-diff start-position target-position))]}
-  (let [target-position-string (get-position-string level target-position)
-        start-position-string  (get-position-string level start-position)]
-    (if (= :cardinal (direction-kind direction))
-      (get-in (transformations-whitelist)
-              [(direction-kind direction)
-               start-position-string
-               target-position-string])
-      (get-in (transformations-whitelist)
-              [(direction-kind direction)
-               start-position-string
-               (some-diagonal-path-neighbor-space level start-position target-position)
-               target-position-string]))))
+  (if (and (valid-position? level start-position)
+           (valid-position? level target-position))
+      (let [target-position-string (get-position-string level target-position)
+            start-position-string  (get-position-string level start-position)]
+        (if (= :cardinal (direction-kind direction))
+          (get-in (transformations-whitelist)
+                  [(direction-kind direction)
+                   start-position-string
+                   target-position-string])
+          (get-in (transformations-whitelist)
+                  [(direction-kind direction)
+                   start-position-string
+                   (some-diagonal-path-neighbor-space level start-position target-position)
+                   target-position-string])))))
 
 (defn set-position-string [level position position-string]
   (update-in level [:cells]
