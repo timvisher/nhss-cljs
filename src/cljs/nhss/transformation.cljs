@@ -145,6 +145,11 @@
       (:up-stair (level-features))
       (:down-stair (level-features)))))
 
+(comment                                ; FIXME
+  (-> (levels/standard-level :4b)
+      (maybe-transform-level [6 15] :e)
+      (maybe-transform-level [7 15] :n))
+  )
 (defn transform-level
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
