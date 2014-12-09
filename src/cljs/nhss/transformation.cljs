@@ -141,6 +141,7 @@
   (some (partial = (:up-stair (level-features))) level-string))
 
 ;;; TODO this function has to be possible to simplify!
+;;; FIXME doesn't know how to handle levels with no up stair
 (defn covered-cell [level-string]
   (if (and (has-down-stair? level-string)
            (has-up-stair? level-string))
