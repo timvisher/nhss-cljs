@@ -181,7 +181,8 @@ legal-transformation?"
                                [row-id line])
                              (row-column-ids)
                              (:cells level))]
-    (println row-id (string/join line))))
+    (println row-id (string/join line) row-id))
+  (println " " (string/join ()))  (println " " (string/join (take (count (first (:cells level))) (row-column-ids)))))
 
 (defn maybe-transform-level [level start-position direction]
   {:pre [(let [direction-whitelist ((direction-kind direction) (transformations-whitelist))
