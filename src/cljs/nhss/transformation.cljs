@@ -99,6 +99,7 @@
        (< y (count cells))))
 
 ;;; TODO This function's a mess. :(
+;;; FIXME doesn't return true if onto or diagonally past a stair
 (defn legal-transformation? [level start-position direction target-position]
   {:pre [(= (direction (directional-position-diffs))
             (position-diff start-position target-position))]}
