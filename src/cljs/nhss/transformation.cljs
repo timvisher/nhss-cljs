@@ -69,10 +69,6 @@
   (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
     (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
 
-(defn trace! [o]
-  (println "TRACE: " (pr-str o))
-  o)
-
 (defn transformations-whitelist []
   {:cardinal      {(:player (level-features)) {(:space (level-features)) (:player (level-features))}
                    (:boulder (level-features)) {(:space (level-features)) (:boulder (level-features))

@@ -1,9 +1,13 @@
 (ns nhss.ui
-  (:require [goog.events :as events]
-            [cljs.core.async :refer [put! chan]])
+  (:require [goog.events     :as events]
+            [cljs.core.async :as a]
+            [clojure.string  :as string]
+            [nhss.levels     :as levels]
+
+            [nhss.util :refer [js-trace!]])
   (:import [goog.events KeyCodes]))
 
-(defn keys []
+(defn movement-keys []
   {KeyCodes/H              :w
    KeyCodes/J              :s
    KeyCodes/K              :n
@@ -26,11 +30,25 @@
    KeyCodes/NKUM_SOUTH     :s})
 
 (defn event->key [e]
-  (get (keys) (.-keyCode e) :key-not-found))
+  (get (movement-keys) (.-keyCode e) :key-not-found))
 
-(defn init []
-  (let [event-chan (chan)]
+(defn read-level []
+  (let [lines (string/split (.-textContent (.getElementById js/document "level")) #"\n")
+        cells (into [] (map (comp (partial apply vector) seq) lines))
+        title "NetHack Sokoban 1a"
+        covered-cell ">"
+        info ""]
+    (js-trace! {:cells cells
+      :title title
+      :covered-cell covered-cell
+      :info info})))
+
+(defn init [level]
+  (set! (.-textContent (.getElementById js/document "level")) (levels/->string level))
+  (let [event-chan (a/chan)
+        key-chan   (a/filter< (apply hash-set (vals (movement-keys))) event-chan)]
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (put! event-chan (event->key e))))))
+                     (a/put! event-chan (event->key e))))
+    key-chan))

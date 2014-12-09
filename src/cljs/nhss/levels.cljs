@@ -1,5 +1,6 @@
 (ns nhss.levels
-  (:require [cognitect.transit :as t]))
+  (:require [cognitect.transit :as t]
+            [clojure.string    :as string]))
 
 (defn standard-levels-string []
   ;; Fudge for now so I don't need to bring a server up that I can
@@ -13,3 +14,6 @@
 
 (defn standard-level [level-id]
   (level-id (standard-levels)))
+
+(defn ->string [level]
+  (string/join "\n" (map string/join (:cells level))))
