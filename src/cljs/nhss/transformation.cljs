@@ -77,7 +77,7 @@
                    (:boulder (level-features)) {(:space (level-features)) (:boulder (level-features))
                                                 (:hole (level-features)) (:boulder (level-features))}}
    :intercardinal {(:player (level-features))
-                   {(:space (level-features))
+                   {true
                     {(:space (level-features))
                      (:player (level-features))}}}})
 
@@ -87,11 +87,15 @@
       :cardinal
       :intercardinal)))
 
-(defn some-diagonal-path-neighbor-space [level start-position target-position]
+(defn diagonal-room? [level start-position target-position]
   {:pre [(diagonal-diff? start-position target-position)]}
-  (->> (diagonal-path-neighbor-strings level start-position target-position)
-       (filter (partial = (:space (level-features))))
-       first))
+  (let [diagonal-room-chars #{(:space (level-features))
+                              (:up-stair (level-features))
+                              (:down-stair (level-features))}]
+    (->> (diagonal-path-neighbor-strings level start-position target-position)
+         (filter diagonal-room-chars)
+         count
+         (< 0))))
 
 (defn valid-position? [{:keys [cells]} [x y :as position]]
   (and (every? pos? position)
@@ -115,7 +119,7 @@
           (get-in (transformations-whitelist)
                   [(direction-kind direction)
                    start-position-string
-                   (some-diagonal-path-neighbor-space level start-position target-position)
+                   (diagonal-room? level start-position target-position)
                    target-position-string])))))
 
 (defn set-position-string [level position position-string]
