@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure        "1.6.0"]
                  [org.clojure/clojurescript  "0.0-2411"]
                  [com.cognitect/transit-cljs "0.8.192"]
+                 [om                         "0.8.0-beta2"]
                  [org.clojure/core.async     "0.1.346.0-17112a-alpha"]]
   :source-paths ["src/clj" "src/cljs"]
   :profiles     {:dev     {:plugins      [[com.cemerick/austin       "0.1.5"]
