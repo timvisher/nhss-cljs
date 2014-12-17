@@ -5,6 +5,8 @@
             [clojure.string      :as string]
             [nhss.levels         :as levels]
             [nhss.transformation :as transformation]
+            [om.core             :as om :include-macros true]
+            [om.dom              :as dom]
 
             [nhss.util :refer [js-trace! trace!]])
   (:import [goog.events KeyCodes]))
@@ -48,14 +50,28 @@
   {:level (read-level)
    :direction key})
 
+(defn make-level-view [new-level-chan]
+  (fn [app owner]
+    (reify
+      om/IWillMount
+      (will-mount [_]
+        (am/go-loop []
+          (let [new-level (a/<! new-level-chan)]
+            (om/transact! app (fn [_]
+                                (:level new-level))))
+          (recur)))
+      om/IRender
+      (render [_]
+        (dom/pre #js {:id "level"} (levels/->string app))))))
+
 (defn init [level new-level-chan]
-  (set! (.-textContent (.getElementById js/document "level")) (levels/->string level))
-  (am/go-loop []
-    (let [new-level (a/<! new-level-chan)]
-      (set! (.-textContent (.getElementById js/document "level")) (levels/->string (:level new-level))))
-    (recur))
-  (let [event-chan (a/chan)
-        key-chan   (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
+  (def app-state level)
+  (om/root
+   (make-level-view new-level-chan)
+   app-state
+   {:target (. js/document (getElementById "app"))})
+  (let [event-chan   (a/chan)
+        key-chan     (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
         command-chan (a/map< key->command key-chan)]
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
