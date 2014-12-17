@@ -50,27 +50,26 @@
   {:level (read-level)
    :direction key})
 
-(defn level-view [app owner]
-  (reify
-    om/IWillMount
-    (will-mount [_]
-      (let [new-level-chan (om/get-state owner :new-level-chan)]
+(defn make-level-view [new-level-chan]
+  (fn [app owner]
+    (reify
+      om/IWillMount
+      (will-mount [_]
         (am/go-loop []
           (let [new-level (a/<! new-level-chan)]
             (om/transact! app (fn [_]
                                 (:level new-level))))
-          (recur))))
-    om/IRender
-    (render [_]
-      (dom/pre #js {:id "level"} (levels/->string app)))))
+          (recur)))
+      om/IRender
+      (render [_]
+        (dom/pre #js {:id "level"} (levels/->string app))))))
 
 (defn init [level new-level-chan]
   (def app-state level)
   (om/root
-   level-view
+   (make-level-view new-level-chan)
    app-state
-   {:state  {:new-level-chan new-level-chan}
-    :target (. js/document (getElementById "app"))})
+   {:target (. js/document (getElementById "app"))})
   (let [event-chan   (a/chan)
         key-chan     (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
         command-chan (a/map< key->command key-chan)]
