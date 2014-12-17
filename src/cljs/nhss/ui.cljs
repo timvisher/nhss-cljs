@@ -5,6 +5,8 @@
             [clojure.string      :as string]
             [nhss.levels         :as levels]
             [nhss.transformation :as transformation]
+            [om.core             :as om :include-macros true]
+            [om.dom              :as dom]
 
             [nhss.util :refer [js-trace! trace!]])
   (:import [goog.events KeyCodes]))
@@ -62,3 +64,13 @@
                    (fn [e]
                      (a/put! event-chan (event->key e))))
     command-chan))
+
+(defn init-om [level]
+  (def app-state level)
+  (om/root
+   (fn [level owner]
+     (reify om/IRender
+       (render [_]
+         (dom/pre #js {:id "level"} (levels/->string level)))))
+   app-state
+   {:target (. js/document (getElementById "app"))}))
