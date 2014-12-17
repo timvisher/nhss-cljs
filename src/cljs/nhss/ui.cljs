@@ -33,8 +33,11 @@
    KeyCodes/NUM_EAST       :e
    KeyCodes/NUM_SOUTH      :s})
 
+(defn undo-keys []
+  {KeyCodes/Z :undo})
+
 (defn event->key [e]
-  (get (movement-keys) (.-keyCode e) :key-not-found))
+  (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
 (defn read-level []
   (let [level-string         (.-textContent (.getElementById js/document "level"))
@@ -65,7 +68,13 @@
         (dom/pre #js {:id "level"} (levels/->string app))))))
 
 (defn init [level new-level-chan]
-  (def app-state level)
+  (def app-state (atom level))
+  (def app-history (atom [level]))
+  (add-watch app-state :history
+             (fn [_ _ _ new-state]
+               (when-not (= (last @app-history) new-state)
+                 (swap! app-history conj new-state)
+                 (.log js/console "Saved new state"))))
   (om/root
    (make-level-view new-level-chan)
    app-state
