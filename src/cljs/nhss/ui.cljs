@@ -50,27 +50,32 @@
   {:level (read-level)
    :direction key})
 
+(defn level-view [app owner]
+  (reify
+    om/IWillMount
+    (will-mount [_]
+      (let [new-level-chan (om/get-state owner :new-level-chan)]
+        (am/go-loop []
+          (let [new-level (a/<! new-level-chan)]
+            (om/transact! app (fn [_]
+                                (:level new-level))))
+          (recur))))
+    om/IRender
+    (render [_]
+      (dom/pre #js {:id "level"} (levels/->string app)))))
+
 (defn init [level new-level-chan]
-  (set! (.-textContent (.getElementById js/document "level")) (levels/->string level))
-  (am/go-loop []
-    (let [new-level (a/<! new-level-chan)]
-      (set! (.-textContent (.getElementById js/document "level")) (levels/->string (:level new-level))))
-    (recur))
-  (let [event-chan (a/chan)
-        key-chan   (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
+  (def app-state level)
+  (om/root
+   level-view
+   app-state
+   {:state  {:new-level-chan new-level-chan}
+    :target (. js/document (getElementById "app"))})
+  (let [event-chan   (a/chan)
+        key-chan     (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
         command-chan (a/map< key->command key-chan)]
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
                      (a/put! event-chan (event->key e))))
     command-chan))
-
-(defn init-om [level]
-  (def app-state level)
-  (om/root
-   (fn [level owner]
-     (reify om/IRender
-       (render [_]
-         (dom/pre #js {:id "level"} (levels/->string level)))))
-   app-state
-   {:target (. js/document (getElementById "app"))}))

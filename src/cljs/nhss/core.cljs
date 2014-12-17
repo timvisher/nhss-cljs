@@ -8,12 +8,11 @@
 
             [nhss.util           :refer [js-trace! trace!]]))
 
-(enable-console-print!)
 
-(ws-repl/connect "ws://localhost:9001")
+(when (= "file:" (-> js/document .-location .-protocol))
+  (enable-console-print!)
+  (ws-repl/connect "ws://localhost:9001"))
 
-(ui/init-om (levels/standard-level :1a))
-
-;; (let [new-level-chan       (a/chan)
-;;       command-chan         (ui/init (levels/standard-level :1a) new-level-chan)]
-;;   (transformation/make-nhss-process command-chan new-level-chan))
+(let [new-level-chan (a/chan)
+      command-chan   (ui/init (levels/standard-level :1a) new-level-chan)]
+  (transformation/make-nhss-process command-chan new-level-chan))
