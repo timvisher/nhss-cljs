@@ -144,11 +144,8 @@
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
   [level start-position target-position]
-  (let [start-position-string      (get-position-string level start-position)
-        new-start-position-string  (covered-cell level start-position)
-        target-position-string     (get-position-string level target-position)
+  (let [new-start-position-string  (covered-cell level start-position)
         new-target-position-string (new-target-position-string level start-position target-position)
-        new-covered-cell           target-position-string
         new-level                  (set-position-string level
                                                         target-position
                                                         new-target-position-string)
