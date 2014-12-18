@@ -73,8 +73,7 @@
   (add-watch app-state :history
              (fn [_ _ _ new-state]
                (when-not (= (last @app-history) new-state)
-                 (swap! app-history conj new-state)
-                 (.log js/console "Saved new state"))))
+                 (swap! app-history conj new-state))))
   (om/root
    (make-level-view new-level-chan)
    app-state
@@ -89,7 +88,6 @@
                      (a/put! event-chan (js-trace! (event->key e)))))
     (am/go-loop []
       (let [undo-command (a/<! undo-key-chan)]
-        (.log js/console "called the undo loop")
         (when (> (count @app-history) 1)
           (swap! app-history pop)
           (reset! app-state (last @app-history))))
