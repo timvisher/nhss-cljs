@@ -39,18 +39,8 @@
 (defn event->key [e]
   (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
-(defn read-level []
-  (let [level-string         (.-textContent (.getElementById js/document "level"))
-        [title info & lines] (string/split level-string #"\n")
-        cells                (into [] (map (comp (partial apply vector) seq) lines))
-        title                title
-        info                 info]
-    {:cells        cells
-     :title        title
-     :info         info}))
-
 (defn key->command [key]
-  {:level (read-level)
+  {:level @app-state
    :direction key})
 
 (defn make-level-view [new-level-chan]

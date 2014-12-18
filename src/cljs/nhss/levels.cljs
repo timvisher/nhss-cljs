@@ -24,3 +24,30 @@
                   (:title level)
                   (:info level)
                   (string/join "\n" (map string/join (:cells level)))))
+
+(defn level-floor [level]
+  (update level :cells
+          (fn [rows]
+            (map (fn [cells]
+                   (map (fn [cell]
+                          (cond (or (= (:boulder (level-features)) cell)
+                                    (= (:hole (level-features)) cell))
+                                (:space (level-features))
+
+                                (= (:player (level-features)) cell)
+                                (:down-stair (level-features))
+
+                                :default
+                                cell))
+                        cells))
+                 rows))))
+
+(defn read-level [level-string]
+  (let [[title info & lines] (string/split level-string #"\n")
+        cells                (into [] (map (comp (partial apply vector) seq) lines))
+        title                title
+        info                 info]
+    {:cells        cells
+     :floor        (level-floor level)
+     :title        title
+     :info         info}))
