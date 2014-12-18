@@ -33,8 +33,11 @@
    KeyCodes/NUM_EAST       :e
    KeyCodes/NUM_SOUTH      :s})
 
+(defn undo-keys []
+  {KeyCodes/Z :undo})
+
 (defn event->key [e]
-  (get (movement-keys) (.-keyCode e) :key-not-found))
+  (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
 (defn read-level []
   (let [level-string         (.-textContent (.getElementById js/document "level"))
@@ -65,16 +68,28 @@
         (dom/pre #js {:id "level"} (levels/->string app))))))
 
 (defn init [level new-level-chan]
-  (def app-state level)
+  (def app-state (atom level))
+  (def app-history (atom [level]))
+  (add-watch app-state :history
+             (fn [_ _ _ new-state]
+               (when-not (= (last @app-history) new-state)
+                 (swap! app-history conj new-state))))
   (om/root
    (make-level-view new-level-chan)
    app-state
    {:target (. js/document (getElementById "app"))})
-  (let [event-chan   (a/chan)
-        key-chan     (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
-        command-chan (a/map< key->command key-chan)]
+  (let [event-chan                           (a/chan)
+        [movement-key-chan other-event-chan] (a/split (apply hash-set (vals (movement-keys))) event-chan)
+        undo-key-chan                        (a/filter< (apply hash-set (vals (undo-keys))) other-event-chan)
+        command-chan                         (a/map< key->command movement-key-chan)]
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (a/put! event-chan (event->key e))))
+                     (a/put! event-chan (js-trace! (event->key e)))))
+    (am/go-loop []
+      (let [undo-command (a/<! undo-key-chan)]
+        (when (> (count @app-history) 1)
+          (swap! app-history pop)
+          (reset! app-state (last @app-history))))
+      (recur))
     command-chan))
