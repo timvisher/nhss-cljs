@@ -5,7 +5,7 @@
             [nhss.levels       :as levels]
             [cljs.core.async   :as a]
 
-            [nhss.util :refer [js-trace! trace! print-level!]]))
+            [nhss.util :refer [js-trace! trace! print-level! print-cells!]]))
 
 (defn get-cells-position-string [cells position]
   (let [[x y] position]

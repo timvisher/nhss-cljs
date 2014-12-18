@@ -31,7 +31,9 @@
    :space      "·"
    :boulder    "0"
    :hole       "^"
-   :player     "@"})
+   :player     "@"
+   :empty      " "
+   :wall       #{"┴" "┼" "┤" "┌" "├" "─" "└" "┐" "┬" "┘" "│"}})
 
 (defn level-floor [{:keys [cells]}]
   (mapv (fn [cells]
@@ -39,6 +41,9 @@
                   (cond (or (= (:boulder (features)) cell)
                             (= (:hole (features)) cell))
                         (:space (features))
+
+                        ((:wall (features)) cell)
+                        (:empty (features))
 
                         (= (:player (features)) cell)
                         (:down-stair (features))
