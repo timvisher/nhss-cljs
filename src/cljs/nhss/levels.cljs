@@ -4,7 +4,7 @@
             [goog.string       :as gstring]
             [goog.string.format]
 
-            [nhss.util :refer [js-trace! trace!]]))
+            [nhss.util :refer [js-trace! trace! print-level! print-cells!]]))
 
 (defn standard-levels-string []
   ;; Fudge for now so I don't need to bring a server up that I can
@@ -25,29 +25,36 @@
                   (:info level)
                   (string/join "\n" (map string/join (:cells level)))))
 
-(defn level-floor [level]
-  (update level :cells
-          (fn [rows]
-            (map (fn [cells]
-                   (map (fn [cell]
-                          (cond (or (= (:boulder (level-features)) cell)
-                                    (= (:hole (level-features)) cell))
-                                (:space (level-features))
+(defn features []
+  {:down-stair ">"
+   :up-stair   "<"
+   :space      "·"
+   :boulder    "0"
+   :hole       "^"
+   :player     "@"})
 
-                                (= (:player (level-features)) cell)
-                                (:down-stair (level-features))
+(defn level-floor [{:keys [cells]}]
+  (mapv (fn [cells]
+          (mapv (fn [cell]
+                  (cond (or (= (:boulder (features)) cell)
+                            (= (:hole (features)) cell))
+                        (:space (features))
 
-                                :default
-                                cell))
-                        cells))
-                 rows))))
+                        (= (:player (features)) cell)
+                        (:down-stair (features))
+
+                        :default
+                        cell))
+                cells))
+        cells))
 
 (defn read-level [level-string]
   (let [[title info & lines] (string/split level-string #"\n")
         cells                (into [] (map (comp (partial apply vector) seq) lines))
         title                title
-        info                 info]
-    {:cells        cells
-     :floor        (level-floor level)
-     :title        title
-     :info         info}))
+        info                 info
+        level                {:cells        cells
+                              :title        title
+                              :info         info}
+        level                (assoc level :floor (level-floor level))]
+    level))

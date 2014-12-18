@@ -5,15 +5,7 @@
             [nhss.levels       :as levels]
             [cljs.core.async   :as a]
 
-            [nhss.util :refer [js-trace! trace!]]))
-
-(defn level-features []
-  {:down-stair ">"
-   :up-stair   "<"
-   :space      "·"
-   :boulder    "0"
-   :hole       "^"
-   :player     "@"})
+            [nhss.util :refer [js-trace! trace! print-level!]]))
 
 (defn get-position-string [level position]
   (let [[x y] position]
@@ -33,7 +25,7 @@
                        (apply concat)
                        sort)]
     (loop [[position & next-positions] positions]
-      (if (position= level position (:player (level-features)))
+      (if (position= level position (:player (levels/features)))
         position
         (recur next-positions)))))
 
@@ -73,13 +65,13 @@
     (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
 
 (defn transformations-whitelist []
-  {:cardinal      {(:player (level-features)) {(:space (level-features)) (:player (level-features))}
-                   (:boulder (level-features)) {(:space (level-features)) (:boulder (level-features))
-                                                (:hole (level-features)) (:boulder (level-features))}}
-   :intercardinal {(:player (level-features))
+  {:cardinal      {(:player (levels/features)) {(:space (levels/features)) (:player (levels/features))}
+                   (:boulder (levels/features)) {(:space (levels/features)) (:boulder (levels/features))
+                                                (:hole (levels/features)) (:boulder (levels/features))}}
+   :intercardinal {(:player (levels/features))
                    {true
-                    {(:space (level-features))
-                     (:player (level-features))}}}})
+                    {(:space (levels/features))
+                     (:player (levels/features))}}}})
 
 (defn direction-kind [direction]
   (let [cardinal (select-keys (directional-position-diffs) [:n :s :e :w])]
@@ -89,9 +81,9 @@
 
 (defn diagonal-room? [level start-position target-position]
   {:pre [(diagonal-diff? start-position target-position)]}
-  (let [diagonal-room-chars #{(:space (level-features))
-                              (:up-stair (level-features))
-                              (:down-stair (level-features))}]
+  (let [diagonal-room-chars #{(:space (levels/features))
+                              (:up-stair (levels/features))
+                              (:down-stair (levels/features))}]
     (->> (diagonal-path-neighbor-strings level start-position target-position)
          (filter diagonal-room-chars)
          count
@@ -129,15 +121,15 @@
                          position-string))))
 
 (defn simple-transformations []
-  {[(:boulder (level-features)) (:hole (level-features))] (:space (level-features))
-   [(:player (level-features)) (:space (level-features))] (:player (level-features))
-   [(:boulder (level-features)) (:space (level-features))] (:boulder (level-features))})
+  {[(:boulder (levels/features)) (:hole (levels/features))] (:space (levels/features))
+   [(:player (levels/features)) (:space (levels/features))] (:player (levels/features))
+   [(:boulder (levels/features)) (:space (levels/features))] (:boulder (levels/features))})
 
 (defn has-down-stair? [level-string]
-  (some (partial = (:down-stair (level-features))) level-string))
+  (some (partial = (:down-stair (levels/features))) level-string))
 
 (defn has-up-stair? [level-string]
-  (some (partial = (:up-stair (level-features))) level-string))
+  (some (partial = (:up-stair (levels/features))) level-string))
 
 ;;; TODO this function has to be possible to simplify!
 ;;; FIXME doesn't know how to handle levels with no up stair
@@ -145,11 +137,11 @@
   (comment                              ; for now, cheat and return space again.
     (if (and (has-down-stair? level-string)
              (has-up-stair? level-string))
-      (:space (level-features))
+      (:space (levels/features))
       (if (has-down-stair? level-string)
-        (:up-stair (level-features))
-        (:down-stair (level-features)))))
-  (:space (level-features)))
+        (:up-stair (levels/features))
+        (:down-stair (levels/features)))))
+  (:space (levels/features)))
 
 (comment
   ;; This broke when assuming that you could always see an up stair or
@@ -181,20 +173,6 @@ legal-transformation?"
                                                         start-position
                                                         new-start-position-string)]
     new-level))
-
-(defn row-column-ids []
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-(defn print-level!
-  "Convenience function for printing a level"
-  [level]
-  (println " " (string/join (take (count (first (:cells level))) (row-column-ids))))
-  (doseq [[row-id line] (map (fn [row-id line]
-                               [row-id line])
-                             (row-column-ids)
-                             (:cells level))]
-    (println row-id (string/join line) row-id))
-  (println " " (string/join ()))  (println " " (string/join (take (count (first (:cells level))) (row-column-ids)))))
 
 (defn maybe-transform-level [level start-position direction]
   {:pre [(let [direction-whitelist ((direction-kind direction) (transformations-whitelist))
