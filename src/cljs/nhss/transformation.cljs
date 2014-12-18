@@ -67,15 +67,6 @@
   (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
     (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
 
-(defn transformations-whitelist []
-  {:cardinal      {(:player (levels/features)) {(:space (levels/features)) (:player (levels/features))}
-                   (:boulder (levels/features)) {(:space (levels/features)) (:boulder (levels/features))
-                                                (:hole (levels/features)) (:boulder (levels/features))}}
-   :intercardinal {(:player (levels/features))
-                   {true
-                    {(:space (levels/features))
-                     (:player (levels/features))}}}})
-
 (defn direction-kind [direction]
   (let [cardinal (select-keys (directional-position-diffs) [:n :s :e :w])]
     (if (contains? cardinal direction)
@@ -103,18 +94,20 @@
             (position-diff start-position target-position))]}
   (if (and (valid-position? level start-position)
            (valid-position? level target-position))
-      (let [target-position-string (get-position-string level target-position)
-            start-position-string  (get-position-string level start-position)]
-        (if (= :cardinal (direction-kind direction))
-          (get-in (transformations-whitelist)
-                  [(direction-kind direction)
-                   start-position-string
-                   target-position-string])
-          (get-in (transformations-whitelist)
-                  [(direction-kind direction)
-                   start-position-string
-                   (diagonal-room? level start-position target-position)
-                   target-position-string])))))
+    (let [target-position-string       (get-position-string level target-position)
+          target-floor-position-string (get-cells-position-string (:floor level) target-position)
+          start-position-string        (get-position-string level start-position)]
+      (if (= :cardinal (direction-kind direction))
+        ;; cardinal
+        (if (not= target-position-string target-floor-position-string)
+          ;; only possible valid move is boulder to hole
+          (and (= (:boulder (levels/features)) start-position-string)
+               (= (:hole (levels/features)) target-position-string))
+          :floor)
+
+        ;; intercardinal
+        (and (= (:player (levels/features)) start-position-string)
+             (= target-position-string target-floor-position-string))))))
 
 (defn set-position-string [level position position-string]
   (update-in level [:cells]
@@ -155,7 +148,7 @@ legal-transformation?"
     new-level))
 
 (defn maybe-transform-level [level start-position direction]
-  {:pre [(let [direction-whitelist ((direction-kind direction) (transformations-whitelist))
+  {:pre [(let [direction-whitelist ((direction-kind direction) #{:cardinal :intercardinal})
                start-position-string (get-position-string level start-position)]
            (contains? direction-whitelist start-position-string))]}
   (let [target-position (to-target-position direction start-position)]
