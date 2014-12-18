@@ -7,9 +7,12 @@
 
             [nhss.util :refer [js-trace! trace! print-level!]]))
 
-(defn get-position-string [level position]
+(defn get-cells-position-string [cells position]
   (let [[x y] position]
-    (nth (nth (:cells level) y) x)))
+    (nth (nth cells y) x)))
+
+(defn get-position-string [level position]
+  (get-cells-position-string (:cells level) position))
 
 (defn position= [level position position-string]
   (= (get-position-string level position) position-string))
@@ -120,51 +123,31 @@
                          (reverse position)
                          position-string))))
 
-(defn simple-transformations []
-  {[(:boulder (levels/features)) (:hole (levels/features))] (:space (levels/features))
-   [(:player (levels/features)) (:space (levels/features))] (:player (levels/features))
-   [(:boulder (levels/features)) (:space (levels/features))] (:boulder (levels/features))})
-
 (defn has-down-stair? [level-string]
   (some (partial = (:down-stair (levels/features))) level-string))
 
 (defn has-up-stair? [level-string]
   (some (partial = (:up-stair (levels/features))) level-string))
 
-;;; TODO this function has to be possible to simplify!
-;;; FIXME doesn't know how to handle levels with no up stair
-(defn covered-cell [level-string]
-  (comment                              ; for now, cheat and return space again.
-    (if (and (has-down-stair? level-string)
-             (has-up-stair? level-string))
-      (:space (levels/features))
-      (if (has-down-stair? level-string)
-        (:up-stair (levels/features))
-        (:down-stair (levels/features)))))
-  (:space (levels/features)))
+(defn covered-cell [level position]
+  (get-cells-position-string (:floor level) position))
 
-(comment
-  ;; This broke when assuming that you could always see an up stair or
-  ;; a down stair. It dropped an up stair in behind everything that
-  ;; moved.
-  ;;
-  ;; To fix, we're going to have to track the covered cell, I think.
-  ;; So back to levels carrying around a :covered-cell key
-  (-> (levels/standard-level :4b)
-      (maybe-transform-level [6 15] :e)
-      (maybe-transform-level [7 15] :n))
-  )
+(defn new-target-position-string [level start-position target-position]
+  (let [start-string (get-position-string level start-position)
+        target-string (get-position-string level target-position)]
+    (if (and (= (:boulder (levels/features)) start-string)
+             (= (:hole (levels/features)) target-string))
+      (get-cells-position-string (:floor level) target-position)
+      start-string)))
+
 (defn transform-level
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
   [level start-position target-position]
-  {:pre [(contains? (simple-transformations)
-                    [(get-position-string level start-position)
-                     (get-position-string level target-position)])]}
   (let [start-position-string      (get-position-string level start-position)
-        new-start-position-string  (covered-cell (levels/->string level))
+        new-start-position-string  (covered-cell level start-position)
         target-position-string     (get-position-string level target-position)
-        new-target-position-string (get (simple-transformations) [start-position-string target-position-string])
+        new-target-position-string (new-target-position-string level start-position target-position)
         new-covered-cell           target-position-string
         new-level                  (set-position-string level
                                                         target-position
