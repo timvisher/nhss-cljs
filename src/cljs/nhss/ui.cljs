@@ -79,11 +79,19 @@
    (make-level-view new-level-chan)
    app-state
    {:target (. js/document (getElementById "app"))})
-  (let [event-chan   (a/chan)
-        key-chan     (a/filter< (apply hash-set (vals (movement-keys))) event-chan)
-        command-chan (a/map< key->command key-chan)]
+  (let [event-chan                           (a/chan)
+        [movement-key-chan other-event-chan] (a/split (apply hash-set (vals (movement-keys))) event-chan)
+        undo-key-chan                        (a/filter< (apply hash-set (vals (undo-keys))) other-event-chan)
+        command-chan                         (a/map< key->command movement-key-chan)]
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (a/put! event-chan (event->key e))))
+                     (a/put! event-chan (js-trace! (event->key e)))))
+    (am/go-loop []
+      (let [undo-command (a/<! undo-key-chan)]
+        (.log js/console "called the undo loop")
+        (when (> (count @app-history) 1)
+          (swap! app-history pop)
+          (reset! app-state (last @app-history))))
+      (recur))
     command-chan))
