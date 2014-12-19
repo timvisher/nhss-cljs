@@ -57,6 +57,7 @@
       (render [_]
         (dom/pre #js {:id "level"} (levels/->string app))))))
 
+;;; TODO this is getting out of hand
 (defn init [level new-level-chan]
   (def app-state (atom level))
   (def app-history (atom [level]))
@@ -75,7 +76,7 @@
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (a/put! event-chan (js-trace! (event->key e)))))
+                     (a/put! event-chan (event->key e))))
     (am/go-loop []
       (let [undo-command (a/<! undo-key-chan)]
         (when (> (count @app-history) 1)
