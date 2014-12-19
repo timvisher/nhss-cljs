@@ -5,19 +5,14 @@
             [nhss.levels       :as levels]
             [cljs.core.async   :as a]
 
-            [nhss.util :refer [js-trace! trace!]]))
+            [nhss.util :refer [js-trace! trace! print-level! print-cells!]]))
 
-(defn level-features []
-  {:down-stair ">"
-   :up-stair   "<"
-   :space      "·"
-   :boulder    "0"
-   :hole       "^"
-   :player     "@"})
+(defn get-cells-position-string [cells position]
+  (let [[x y] position]
+    (nth (nth cells y) x)))
 
 (defn get-position-string [level position]
-  (let [[x y] position]
-    (nth (nth (:cells level) y) x)))
+  (get-cells-position-string (:cells level) position))
 
 (defn position= [level position position-string]
   (= (get-position-string level position) position-string))
@@ -33,7 +28,7 @@
                        (apply concat)
                        sort)]
     (loop [[position & next-positions] positions]
-      (if (position= level position (:player (level-features)))
+      (if (position= level position (:player (levels/features)))
         position
         (recur next-positions)))))
 
@@ -67,33 +62,21 @@
                         (assoc-in position-diff [1] 0)]]
     (map apply-position-diff position-diffs (repeat start-position))))
 
-(defn diagonal-path-neighbor-strings [level start-position target-position]
-  {:pre [(diagonal-diff? start-position target-position)]}
-  (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
-    (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
-
-(defn transformations-whitelist []
-  {:cardinal      {(:player (level-features)) {(:space (level-features)) (:player (level-features))}
-                   (:boulder (level-features)) {(:space (level-features)) (:boulder (level-features))
-                                                (:hole (level-features)) (:boulder (level-features))}}
-   :intercardinal {(:player (level-features))
-                   {true
-                    {(:space (level-features))
-                     (:player (level-features))}}}})
-
 (defn direction-kind [direction]
   (let [cardinal (select-keys (directional-position-diffs) [:n :s :e :w])]
     (if (contains? cardinal direction)
       :cardinal
       :intercardinal)))
 
+(defn floor-space? [level position]
+  (= (get-cells-position-string (:floor level) position)
+     (get-position-string level position)))
+
 (defn diagonal-room? [level start-position target-position]
   {:pre [(diagonal-diff? start-position target-position)]}
-  (let [diagonal-room-chars #{(:space (level-features))
-                              (:up-stair (level-features))
-                              (:down-stair (level-features))}]
-    (->> (diagonal-path-neighbor-strings level start-position target-position)
-         (filter diagonal-room-chars)
+  (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
+    (->> diagonal-neighbor-positions
+         (filter (partial floor-space? level))
          count
          (< 0))))
 
@@ -108,18 +91,24 @@
             (position-diff start-position target-position))]}
   (if (and (valid-position? level start-position)
            (valid-position? level target-position))
-      (let [target-position-string (get-position-string level target-position)
-            start-position-string  (get-position-string level start-position)]
-        (if (= :cardinal (direction-kind direction))
-          (get-in (transformations-whitelist)
-                  [(direction-kind direction)
-                   start-position-string
-                   target-position-string])
-          (get-in (transformations-whitelist)
-                  [(direction-kind direction)
-                   start-position-string
-                   (diagonal-room? level start-position target-position)
-                   target-position-string])))))
+    (let [target-position-string       (get-position-string level target-position)
+          target-floor-position-string (get-cells-position-string (:floor level) target-position)
+          start-position-string        (get-position-string level start-position)]
+      ;; must start with player or boulder
+      (if (or (= (:player (levels/features)) start-position-string)
+              (= (:boulder (levels/features)) start-position-string))
+       (if (= :cardinal (direction-kind direction))
+         ;; cardinal
+         (if (not= target-position-string target-floor-position-string)
+           ;; only possible valid move is boulder to hole
+           (and (= (:boulder (levels/features)) start-position-string)
+                (= (:hole (levels/features)) target-position-string))
+           :floor)
+
+         ;; intercardinal
+         (and (= (:player (levels/features)) start-position-string)
+              (diagonal-room? level start-position target-position)
+              (= target-position-string target-floor-position-string)))))))
 
 (defn set-position-string [level position position-string]
   (update-in level [:cells]
@@ -128,52 +117,29 @@
                          (reverse position)
                          position-string))))
 
-(defn simple-transformations []
-  {[(:boulder (level-features)) (:hole (level-features))] (:space (level-features))
-   [(:player (level-features)) (:space (level-features))] (:player (level-features))
-   [(:boulder (level-features)) (:space (level-features))] (:boulder (level-features))})
-
 (defn has-down-stair? [level-string]
-  (some (partial = (:down-stair (level-features))) level-string))
+  (some (partial = (:down-stair (levels/features))) level-string))
 
 (defn has-up-stair? [level-string]
-  (some (partial = (:up-stair (level-features))) level-string))
+  (some (partial = (:up-stair (levels/features))) level-string))
 
-;;; TODO this function has to be possible to simplify!
-;;; FIXME doesn't know how to handle levels with no up stair
-(defn covered-cell [level-string]
-  (comment                              ; for now, cheat and return space again.
-    (if (and (has-down-stair? level-string)
-             (has-up-stair? level-string))
-      (:space (level-features))
-      (if (has-down-stair? level-string)
-        (:up-stair (level-features))
-        (:down-stair (level-features)))))
-  (:space (level-features)))
+(defn covered-cell [level position]
+  (get-cells-position-string (:floor level) position))
 
-(comment
-  ;; This broke when assuming that you could always see an up stair or
-  ;; a down stair. It dropped an up stair in behind everything that
-  ;; moved.
-  ;;
-  ;; To fix, we're going to have to track the covered cell, I think.
-  ;; So back to levels carrying around a :covered-cell key
-  (-> (levels/standard-level :4b)
-      (maybe-transform-level [6 15] :e)
-      (maybe-transform-level [7 15] :n))
-  )
+(defn new-target-position-string [level start-position target-position]
+  (let [start-string (get-position-string level start-position)
+        target-string (get-position-string level target-position)]
+    (if (and (= (:boulder (levels/features)) start-string)
+             (= (:hole (levels/features)) target-string))
+      (get-cells-position-string (:floor level) target-position)
+      start-string)))
+
 (defn transform-level
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
   [level start-position target-position]
-  {:pre [(contains? (simple-transformations)
-                    [(get-position-string level start-position)
-                     (get-position-string level target-position)])]}
-  (let [start-position-string      (get-position-string level start-position)
-        new-start-position-string  (covered-cell (levels/->string level))
-        target-position-string     (get-position-string level target-position)
-        new-target-position-string (get (simple-transformations) [start-position-string target-position-string])
-        new-covered-cell           target-position-string
+  (let [new-start-position-string  (covered-cell level start-position)
+        new-target-position-string (new-target-position-string level start-position target-position)
         new-level                  (set-position-string level
                                                         target-position
                                                         new-target-position-string)
@@ -182,24 +148,7 @@ legal-transformation?"
                                                         new-start-position-string)]
     new-level))
 
-(defn row-column-ids []
-  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-(defn print-level!
-  "Convenience function for printing a level"
-  [level]
-  (println " " (string/join (take (count (first (:cells level))) (row-column-ids))))
-  (doseq [[row-id line] (map (fn [row-id line]
-                               [row-id line])
-                             (row-column-ids)
-                             (:cells level))]
-    (println row-id (string/join line) row-id))
-  (println " " (string/join ()))  (println " " (string/join (take (count (first (:cells level))) (row-column-ids)))))
-
 (defn maybe-transform-level [level start-position direction]
-  {:pre [(let [direction-whitelist ((direction-kind direction) (transformations-whitelist))
-               start-position-string (get-position-string level start-position)]
-           (contains? direction-whitelist start-position-string))]}
   (let [target-position (to-target-position direction start-position)]
     (if (legal-transformation? level start-position direction target-position)
       (transform-level level start-position target-position)

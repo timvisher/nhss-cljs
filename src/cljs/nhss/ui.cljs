@@ -39,18 +39,8 @@
 (defn event->key [e]
   (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
-(defn read-level []
-  (let [level-string         (.-textContent (.getElementById js/document "level"))
-        [title info & lines] (string/split level-string #"\n")
-        cells                (into [] (map (comp (partial apply vector) seq) lines))
-        title                title
-        info                 info]
-    {:cells        cells
-     :title        title
-     :info         info}))
-
 (defn key->command [key]
-  {:level (read-level)
+  {:level @app-state
    :direction key})
 
 (defn make-level-view [new-level-chan]
@@ -67,6 +57,7 @@
       (render [_]
         (dom/pre #js {:id "level"} (levels/->string app))))))
 
+;;; TODO this is getting out of hand
 (defn init [level new-level-chan]
   (def app-state (atom level))
   (def app-history (atom [level]))
@@ -85,7 +76,7 @@
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (a/put! event-chan (js-trace! (event->key e)))))
+                     (a/put! event-chan (event->key e))))
     (am/go-loop []
       (let [undo-command (a/<! undo-key-chan)]
         (when (> (count @app-history) 1)
