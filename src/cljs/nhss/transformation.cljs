@@ -62,24 +62,21 @@
                         (assoc-in position-diff [1] 0)]]
     (map apply-position-diff position-diffs (repeat start-position))))
 
-(defn diagonal-path-neighbor-strings [level start-position target-position]
-  {:pre [(diagonal-diff? start-position target-position)]}
-  (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
-    (sort (map (partial get-position-string level) diagonal-neighbor-positions))))
-
 (defn direction-kind [direction]
   (let [cardinal (select-keys (directional-position-diffs) [:n :s :e :w])]
     (if (contains? cardinal direction)
       :cardinal
       :intercardinal)))
 
+(defn floor-space? [level position]
+  (= (get-cells-position-string (:floor level) position)
+     (get-position-string level position)))
+
 (defn diagonal-room? [level start-position target-position]
   {:pre [(diagonal-diff? start-position target-position)]}
-  (let [diagonal-room-chars #{(:space (levels/features))
-                              (:up-stair (levels/features))
-                              (:down-stair (levels/features))}]
-    (->> (diagonal-path-neighbor-strings level start-position target-position)
-         (filter diagonal-room-chars)
+  (let [diagonal-neighbor-positions (get-diagonal-path-neighbors start-position target-position)]
+    (->> diagonal-neighbor-positions
+         (filter (partial floor-space? level))
          count
          (< 0))))
 
