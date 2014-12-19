@@ -7,12 +7,14 @@
   (slurp (format "levels/%s.txt" (name level-id))))
 
 (defn features []
-  {:down-stair ">"
-   :up-stair   "<"
-   :space      "·"
-   :boulder    "0"
-   :hole       "^"
-   :player     "@"})
+  {:down-stair \>
+   :up-stair   \<
+   :space      \·
+   :boulder    \0
+   :hole       \^
+   :player     \@
+   :empty      \space
+   :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
 
 (defn level-floor [{:keys [cells]}]
   (mapv (fn [cells]
@@ -20,6 +22,9 @@
                   (cond (or (= (:boulder (features)) cell)
                             (= (:hole (features)) cell))
                         (:space (features))
+
+                        ((:wall (features)) cell)
+                        (:empty (features))
 
                         (= (:player (features)) cell)
                         (:down-stair (features))

@@ -26,14 +26,14 @@
                   (string/join "\n" (map string/join (:cells level)))))
 
 (defn features []
-  {:down-stair ">"
-   :up-stair   "<"
-   :space      "·"
-   :boulder    "0"
-   :hole       "^"
-   :player     "@"
-   :empty      " "
-   :wall       #{"┴" "┼" "┤" "┌" "├" "─" "└" "┐" "┬" "┘" "│"}})
+  {:down-stair \>
+   :up-stair   \<
+   :space      \·
+   :boulder    \0
+   :hole       \^
+   :player     \@
+   :empty      \space
+   :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
 
 (defn level-floor [{:keys [cells]}]
   (mapv (fn [cells]
