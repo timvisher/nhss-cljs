@@ -97,17 +97,21 @@
     (let [target-position-string       (get-position-string level target-position)
           target-floor-position-string (get-cells-position-string (:floor level) target-position)
           start-position-string        (get-position-string level start-position)]
-      (if (= :cardinal (direction-kind direction))
-        ;; cardinal
-        (if (not= target-position-string target-floor-position-string)
-          ;; only possible valid move is boulder to hole
-          (and (= (:boulder (levels/features)) start-position-string)
-               (= (:hole (levels/features)) target-position-string))
-          :floor)
+      ;; must start with player or boulder
+      (if (or (= (:player (levels/features)) start-position-string)
+              (= (:boulder (levels/features)) start-position-string))
+       (if (= :cardinal (direction-kind direction))
+         ;; cardinal
+         (if (not= target-position-string target-floor-position-string)
+           ;; only possible valid move is boulder to hole
+           (and (= (:boulder (levels/features)) start-position-string)
+                (= (:hole (levels/features)) target-position-string))
+           :floor)
 
-        ;; intercardinal
-        (and (= (:player (levels/features)) start-position-string)
-             (= target-position-string target-floor-position-string))))))
+         ;; intercardinal
+         (and (= (:player (levels/features)) start-position-string)
+              (diagonal-room? level start-position target-position)
+              (= target-position-string target-floor-position-string)))))))
 
 (defn set-position-string [level position position-string]
   (update-in level [:cells]
@@ -148,9 +152,6 @@ legal-transformation?"
     new-level))
 
 (defn maybe-transform-level [level start-position direction]
-  {:pre [(let [direction-whitelist ((direction-kind direction) #{:cardinal :intercardinal})
-               start-position-string (get-position-string level start-position)]
-           (contains? direction-whitelist start-position-string))]}
   (let [target-position (to-target-position direction start-position)]
     (if (legal-transformation? level start-position direction target-position)
       (transform-level level start-position target-position)
