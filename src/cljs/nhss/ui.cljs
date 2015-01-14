@@ -39,18 +39,8 @@
 (defn event->key [e]
   (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
-(defn read-level []
-  (let [level-string         (.-textContent (.getElementById js/document "level"))
-        [title info & lines] (string/split level-string #"\n")
-        cells                (into [] (map (comp (partial apply vector) seq) lines))
-        title                title
-        info                 info]
-    {:cells        cells
-     :title        title
-     :info         info}))
-
 (defn key->command [key]
-  {:level (read-level)
+  {:level (:current-level @app-state)
    :direction key})
 
 (defn make-level-view [new-level-chan]
@@ -67,15 +57,45 @@
       (render [_]
         (dom/pre #js {:id "level"} (levels/->string app))))))
 
-(defn init [level new-level-chan]
-  (def app-state (atom level))
-  (def app-history (atom [level]))
+(defn level-option-view []
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/option #js {:value (:title app)} (:title app))))))
+
+(defn level-select-view []
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (apply dom/select #js {:onChange (fn [e]
+                                           (let [level-title (-> e .-target .-value)
+                                                 level-id    (keyword (last (string/split level-title #" ")))]
+                                             (swap! app-state assoc :current-level (level-id (:levels @app-state)))))
+                               :value (:title (:current-level app))}
+               (om/build-all (level-option-view) (sort-by :title (def *charnock* (vals (:levels app))))))))))
+
+(defn make-app-view [new-level-chan]
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/div nil
+                 (om/build (level-select-view) app)
+                 (om/build (make-level-view new-level-chan) (:current-level app)))))))
+
+;;; TODO this is getting out of hand
+(defn init [levels new-level-chan]
+  (def app-state (atom {:current-level  (:2a levels)
+                        :levels         levels}))
+  (def app-history (atom [(:current-level @app-state)]))
   (add-watch app-state :history
              (fn [_ _ _ new-state]
-               (when-not (= (last @app-history) new-state)
-                 (swap! app-history conj new-state))))
+               (when-not (= (last @app-history) (:current-level new-state))
+                 (swap! app-history conj (:current-level new-state)))))
   (om/root
-   (make-level-view new-level-chan)
+   (make-app-view new-level-chan)
    app-state
    {:target (. js/document (getElementById "app"))})
   (let [event-chan                           (a/chan)
@@ -85,11 +105,12 @@
     (events/listen (.-body js/document)
                    (.-KEYUP events/EventType)
                    (fn [e]
-                     (a/put! event-chan (js-trace! (event->key e)))))
+                     (a/put! event-chan (event->key e))))
     (am/go-loop []
       (let [undo-command (a/<! undo-key-chan)]
         (when (> (count @app-history) 1)
           (swap! app-history pop)
-          (reset! app-state (last @app-history))))
+          (swap! app-state (fn [app-state]
+                             (assoc app-state :current-level (last @app-history))))))
       (recur))
     command-chan))

@@ -6,12 +6,44 @@
 (defn slurp-level [level-id]
   (slurp (format "levels/%s.txt" (name level-id))))
 
+(defn features []
+  {:down-stair \>
+   :up-stair   \<
+   :space      \·
+   :boulder    \0
+   :hole       \^
+   :player     \@
+   :empty      \space
+   :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
+
+(defn level-floor [{:keys [cells]}]
+  (mapv (fn [cells]
+          (mapv (fn [cell]
+                  (cond (or (= (:boulder (features)) cell)
+                            (= (:hole (features)) cell))
+                        (:space (features))
+
+                        ((:wall (features)) cell)
+                        (:empty (features))
+
+                        (= (:player (features)) cell)
+                        (:down-stair (features))
+
+                        :default
+                        cell))
+                cells))
+        cells))
+
 (defn read-level [level-string]
   (let [[title info & lines] (string/split level-string #"\n")
-        cells (into [] (map (comp (partial apply vector) seq) lines))]
-    {:cells cells
-     :title title
-     :info  info}))
+        cells                (into [] (map (comp (partial apply vector) seq) lines))
+        title                title
+        info                 info
+        level                {:cells        cells
+                              :title        title
+                              :info         info}
+        level                (assoc level :floor (level-floor level))]
+    level))
 
 (defn transit-write-to-out [levels out]
   (t/write (t/writer out :json) levels))
