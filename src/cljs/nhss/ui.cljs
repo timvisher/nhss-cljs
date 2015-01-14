@@ -48,9 +48,31 @@
   (let [cells (:cells level)
         cell-codes (map (fn [row]
                          (map (fn [cell]
-                                (dom/code (if (= "@" cell)
-                                            #js {:className "cell player"}
-                                            #js {:className "cell"})
+                                (dom/code (cond (= (:player (levels/features)) cell)
+                                                #js {:className "cell player"}
+
+                                                (= (:hole (levels/features)) cell)
+                                                #js {:className "cell trap"}
+
+                                                (#{(:up-stair (levels/features))
+                                                   (:down-stair (levels/features))}
+                                                 cell)
+                                                #js {:className "cell stair"}
+
+                                                ((:wall (levels/features))
+                                                 cell)
+                                                #js {:className "cell wall"}
+
+                                                (= (:door (levels/features))
+                                                   cell)
+                                                #js {:className "cell door"}
+
+                                                (= (:scroll (levels/features))
+                                                   cell)
+                                                #js {:className "cell scroll"}
+
+                                                :default
+                                                #js {:className "cell"})
                                           (if (= " " cell) (gstring/unescapeEntities "&nbsp;") cell)))
                               row))
                        cells)]

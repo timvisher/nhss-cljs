@@ -22,5 +22,7 @@
    :boulder    \0
    :hole       \^
    :player     \@
+   :door       \+
+   :scroll     \?
    :empty      \space
    :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
