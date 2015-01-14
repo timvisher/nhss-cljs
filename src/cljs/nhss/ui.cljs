@@ -7,6 +7,7 @@
             [nhss.transformation :as transformation]
             [om.core             :as om :include-macros true]
             [om.dom              :as dom]
+            [goog.string         :as gstring]
 
             [nhss.util :refer [js-trace! trace!]])
   (:import [goog.events KeyCodes]))
@@ -43,6 +44,18 @@
   {:level (:current-level @app-state)
    :direction key})
 
+(defn level->code-forest [level]
+  (let [cells (:cells level)
+        cell-codes (map (fn [row]
+                         (map (fn [cell]
+                                (dom/code (if (= "@" cell)
+                                            #js {:className "cell player"}
+                                            #js {:className "cell"})
+                                          (if (= " " cell) (gstring/unescapeEntities "&nbsp;") cell)))
+                              row))
+                       cells)]
+    (flatten (interleave cell-codes (repeat (dom/br nil))))))
+
 (defn make-level-view [new-level-chan]
   (fn [app owner]
     (reify
@@ -55,7 +68,7 @@
           (recur)))
       om/IRender
       (render [_]
-        (dom/pre #js {:id "level"} (levels/->string app))))))
+        (apply dom/div #js {:id "level"} (level->code-forest app))))))
 
 (defn level-option-view []
   (fn [app owner]
