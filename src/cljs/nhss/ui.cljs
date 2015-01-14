@@ -72,7 +72,8 @@
         (apply dom/select #js {:onChange (fn [e]
                                            (let [level-title (-> e .-target .-value)
                                                  level-id    (keyword (last (string/split level-title #" ")))]
-                                             (swap! app-state assoc :current-level (level-id (:levels @app-state)))))}
+                                             (swap! app-state assoc :current-level (level-id (:levels @app-state)))))
+                               :value (:title (:current-level app))}
                (om/build-all (level-option-view) (sort-by :title (def *charnock* (vals (:levels app))))))))))
 
 (defn make-app-view [new-level-chan]
@@ -86,8 +87,8 @@
 
 ;;; TODO this is getting out of hand
 (defn init [levels new-level-chan]
-  (def app-state (atom {:current-level (:2a levels)
-                        :levels        levels}))
+  (def app-state (atom {:current-level  (:2a levels)
+                        :levels         levels}))
   (def app-history (atom [(:current-level @app-state)]))
   (add-watch app-state :history
              (fn [_ _ _ new-state]

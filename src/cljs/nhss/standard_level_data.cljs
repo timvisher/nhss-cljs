@@ -1,5 +1,6 @@
 (ns nhss.standard-level-data
-  (:require [nhss.levels :as levels]))
+  (:require [nhss.levels    :as levels]
+            [clojure.string :as string]))
 
 (defn level->cells [level]
   (into [] (map (comp (partial apply vector) seq) level)))
@@ -22,10 +23,14 @@
                 cells))
         cells))
 
+(defn title->id [title]
+  (keyword (last (string/split title #" "))))
+
 (defn deflevel [title info & level]
   (let [cells (level->cells level)
         floor (cells->floor cells)]
-    {:title title
+    {:id    (title->id title)
+     :title title
      :info  info
      :cells cells
      :floor floor}))
