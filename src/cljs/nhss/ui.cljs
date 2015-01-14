@@ -57,6 +57,14 @@
       (render [_]
         (dom/pre #js {:id "level"} (levels/->string (:current-level app)))))))
 
+(defn make-app-view [new-level-chan]
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/div nil
+                 (om/build (make-level-view new-level-chan) app))))))
+
 ;;; TODO this is getting out of hand
 (defn init [levels new-level-chan]
   (def app-state (atom {:current-level (:2a levels)
@@ -67,7 +75,7 @@
                (when-not (= (last @app-history) (:current-level new-state))
                  (swap! app-history conj (:current-level new-state)))))
   (om/root
-   (make-level-view new-level-chan)
+   (make-app-view new-level-chan)
    app-state
    {:target (. js/document (getElementById "app"))})
   (let [event-chan                           (a/chan)
@@ -83,7 +91,6 @@
         (when (> (count @app-history) 1)
           (swap! app-history pop)
           (swap! app-state (fn [app-state]
-                             (def *charnock* app-state)
                              (assoc app-state :current-level (last @app-history))))))
       (recur))
     command-chan))
