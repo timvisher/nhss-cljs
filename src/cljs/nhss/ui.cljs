@@ -51,11 +51,11 @@
         (am/go-loop []
           (let [new-level (a/<! new-level-chan)]
             (om/transact! app (fn [_]
-                                (assoc app :current-level (:level new-level)))))
+                                (:level new-level))))
           (recur)))
       om/IRender
       (render [_]
-        (dom/pre #js {:id "level"} (levels/->string (:current-level app)))))))
+        (dom/pre #js {:id "level"} (levels/->string app))))))
 
 (defn make-app-view [new-level-chan]
   (fn [app owner]
@@ -63,7 +63,8 @@
       om/IRender
       (render [_]
         (dom/div nil
-                 (om/build (make-level-view new-level-chan) app))))))
+                 ;; (om/build level-select-view app)
+                 (om/build (make-level-view new-level-chan) (:current-level app)))))))
 
 ;;; TODO this is getting out of hand
 (defn init [levels new-level-chan]
