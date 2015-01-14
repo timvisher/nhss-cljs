@@ -69,7 +69,11 @@
     (reify
       om/IRender
       (render [_]
-        (apply dom/select nil (om/build-all (level-option-view) (sort-by :title (def *charnock* (vals app)))))))))
+        (apply dom/select #js {:onChange (fn [e]
+                                           (let [level-title (-> e .-target .-value)
+                                                 level-id    (keyword (last (string/split level-title #" ")))]
+                                             (swap! app-state assoc :current-level (level-id (:levels @app-state)))))}
+               (om/build-all (level-option-view) (sort-by :title (def *charnock* (vals (:levels app))))))))))
 
 (defn make-app-view [new-level-chan]
   (fn [app owner]
@@ -77,7 +81,7 @@
       om/IRender
       (render [_]
         (dom/div nil
-                 (om/build (level-select-view) (:levels app))
+                 (om/build (level-select-view) app)
                  (om/build (make-level-view new-level-chan) (:current-level app)))))))
 
 ;;; TODO this is getting out of hand
