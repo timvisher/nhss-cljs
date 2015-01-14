@@ -40,7 +40,7 @@
   (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
 (defn key->command [key]
-  {:level @app-state
+  {:level (:current-level @app-state)
    :direction key})
 
 (defn make-level-view [new-level-chan]
@@ -51,20 +51,21 @@
         (am/go-loop []
           (let [new-level (a/<! new-level-chan)]
             (om/transact! app (fn [_]
-                                (:level new-level))))
+                                (assoc app :current-level (:level new-level)))))
           (recur)))
       om/IRender
       (render [_]
-        (dom/pre #js {:id "level"} (levels/->string app))))))
+        (dom/pre #js {:id "level"} (levels/->string (:current-level app)))))))
 
 ;;; TODO this is getting out of hand
-(defn init [level new-level-chan]
-  (def app-state (atom level))
-  (def app-history (atom [level]))
+(defn init [levels new-level-chan]
+  (def app-state (atom {:current-level (:2a levels)
+                        :levels        levels}))
+  (def app-history (atom [(:current-level @app-state)]))
   (add-watch app-state :history
              (fn [_ _ _ new-state]
-               (when-not (= (last @app-history) new-state)
-                 (swap! app-history conj new-state))))
+               (when-not (= (last @app-history) (:current-level new-state))
+                 (swap! app-history conj (:current-level new-state)))))
   (om/root
    (make-level-view new-level-chan)
    app-state
@@ -81,6 +82,8 @@
       (let [undo-command (a/<! undo-key-chan)]
         (when (> (count @app-history) 1)
           (swap! app-history pop)
-          (reset! app-state (last @app-history))))
+          (swap! app-state (fn [app-state]
+                             (def *charnock* app-state)
+                             (assoc app-state :current-level (last @app-history))))))
       (recur))
     command-chan))
