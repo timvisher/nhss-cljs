@@ -9,7 +9,7 @@
             [nhss.util           :refer [js-trace! trace!]]))
 
 
-(when (= "localhost" (-> js/document .-location .-hostname))
+(when (= "localhost" (.. js/document -location -hostname))
   (enable-console-print!)
   (ws-repl/connect "ws://localhost:9001"
                    :print #{:repl :console}))
