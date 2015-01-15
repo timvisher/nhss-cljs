@@ -26,14 +26,33 @@
 (defn title->id [title]
   (keyword (last (string/split title #" "))))
 
+(defn position= [level position position-string]
+  (= (levels/get-position-string level position) position-string))
+
+(defn level->player-position [level]
+  (let [height    (count (:cells level))
+        width     (count (first (:cells level)))
+        positions (->> (map (fn [y]
+                              (map (fn [x]
+                                     [x,y])
+                                   (range width)))
+                            (range height))
+                       (apply concat)
+                       sort)]
+    (loop [[position & next-positions] positions]
+      (if (position= level position (:player levels/features))
+        position
+        (recur next-positions)))))
+
 (defn deflevel [title info & level]
   (let [cells (level->cells level)
-        floor (cells->floor cells)]
-    {:id    (title->id title)
-     :title title
-     :info  info
-     :cells cells
-     :floor floor}))
+        floor (cells->floor cells)
+        level {:id    (title->id title)
+               :title title
+               :info  info
+               :cells cells
+               :floor floor}]
+    (assoc level :player-position (level->player-position level))))
 
 (def levels
   {:1a (deflevel

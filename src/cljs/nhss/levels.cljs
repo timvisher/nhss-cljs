@@ -26,3 +26,10 @@
    :scroll     \?
    :empty      \space
    :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
+
+(defn get-cells-position-string [cells position]
+  (let [[x y] position]
+    (nth (nth cells y) x)))
+
+(defn get-position-string [level position]
+  (get-cells-position-string (:cells level) position))
