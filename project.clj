@@ -4,7 +4,7 @@
   :license      {:name "CC-BY"
                  :url "https://creativecommons.org/licenses/by/3.0/us/"}
   :dependencies [[org.clojure/clojure        "1.6.0"]
-                 [org.clojure/clojurescript  "0.0-2411"]
+                 [org.clojure/clojurescript  "0.0-2655"]
                  [com.cognitect/transit-cljs "0.8.192"]
                  [om                         "0.8.0-beta3"]
                  [cljs-ajax                  "0.3.3"]
