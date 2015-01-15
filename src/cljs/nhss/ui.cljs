@@ -7,7 +7,6 @@
             [nhss.transformation :as transformation]
             [om.core             :as om :include-macros true]
             [om.dom              :as dom]
-            [goog.string         :as gstring]
 
             [nhss.util :refer [js-trace! trace!]])
   (:import [goog.events KeyCodes]))
@@ -73,7 +72,7 @@
 
                                                 :default
                                                 #js {:className "cell"})
-                                          (if (= " " cell) (gstring/unescapeEntities "&nbsp;") cell)))
+                                          cell))
                               row))
                        cells)]
     (flatten (interleave cell-codes (repeat (dom/br nil))))))
