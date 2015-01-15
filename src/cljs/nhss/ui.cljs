@@ -48,26 +48,26 @@
   (let [cells (:cells level)
         cell-codes (map (fn [row]
                          (map (fn [cell]
-                                (dom/code (cond (= (:player (levels/features)) cell)
+                                (dom/code (cond (= (:player levels/features) cell)
                                                 #js {:className "cell player"}
 
-                                                (= (:hole (levels/features)) cell)
+                                                (= (:hole levels/features) cell)
                                                 #js {:className "cell trap"}
 
-                                                (#{(:up-stair (levels/features))
-                                                   (:down-stair (levels/features))}
+                                                (#{(:up-stair levels/features)
+                                                   (:down-stair levels/features)}
                                                  cell)
                                                 #js {:className "cell stair"}
 
-                                                ((:wall (levels/features))
+                                                ((:wall levels/features)
                                                  cell)
                                                 #js {:className "cell wall"}
 
-                                                (= (:door (levels/features))
+                                                (= (:door levels/features)
                                                    cell)
                                                 #js {:className "cell door"}
 
-                                                (= (:scroll (levels/features))
+                                                (= (:scroll levels/features)
                                                    cell)
                                                 #js {:className "cell scroll"}
 

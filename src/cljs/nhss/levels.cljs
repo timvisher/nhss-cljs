@@ -15,7 +15,7 @@
                   (:info level)
                   (string/join "\n" (map string/join (:cells level)))))
 
-(defn features []
+(def features
   {:down-stair \>
    :up-stair   \<
    :space      \·

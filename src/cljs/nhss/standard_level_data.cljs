@@ -8,15 +8,15 @@
 (defn cells->floor [cells]
   (mapv (fn [cells]
           (mapv (fn [cell]
-                  (cond (or (= (:boulder (levels/features)) cell)
-                            (= (:hole (levels/features)) cell))
-                        (:space (levels/features))
+                  (cond (or (= (:boulder levels/features) cell)
+                            (= (:hole levels/features) cell))
+                        (:space levels/features)
 
-                        ((:wall (levels/features)) cell)
-                        (:empty (levels/features))
+                        ((:wall levels/features) cell)
+                        (:empty levels/features)
 
-                        (= (:player (levels/features)) cell)
-                        (:down-stair (levels/features))
+                        (= (:player levels/features) cell)
+                        (:down-stair levels/features)
 
                         :default
                         cell))

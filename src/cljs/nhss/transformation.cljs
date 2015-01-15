@@ -28,7 +28,7 @@
                        (apply concat)
                        sort)]
     (loop [[position & next-positions] positions]
-      (if (position= level position (:player (levels/features)))
+      (if (position= level position (:player levels/features))
         position
         (recur next-positions)))))
 
@@ -95,18 +95,18 @@
           target-floor-position-string (get-cells-position-string (:floor level) target-position)
           start-position-string        (get-position-string level start-position)]
       ;; must start with player or boulder
-      (if (or (= (:player (levels/features)) start-position-string)
-              (= (:boulder (levels/features)) start-position-string))
+      (if (or (= (:player levels/features) start-position-string)
+              (= (:boulder levels/features) start-position-string))
        (if (= :cardinal (direction-kind direction))
          ;; cardinal
          (if (not= target-position-string target-floor-position-string)
            ;; only possible valid move is boulder to hole
-           (and (= (:boulder (levels/features)) start-position-string)
-                (= (:hole (levels/features)) target-position-string))
+           (and (= (:boulder levels/features) start-position-string)
+                (= (:hole levels/features) target-position-string))
            :floor)
 
          ;; intercardinal
-         (and (= (:player (levels/features)) start-position-string)
+         (and (= (:player levels/features) start-position-string)
               (diagonal-room? level start-position target-position)
               (= target-position-string target-floor-position-string)))))))
 
@@ -118,10 +118,10 @@
                          position-string))))
 
 (defn has-down-stair? [level-string]
-  (some (partial = (:down-stair (levels/features))) level-string))
+  (some (partial = (:down-stair levels/features)) level-string))
 
 (defn has-up-stair? [level-string]
-  (some (partial = (:up-stair (levels/features))) level-string))
+  (some (partial = (:up-stair levels/features)) level-string))
 
 (defn covered-cell [level position]
   (get-cells-position-string (:floor level) position))
@@ -129,8 +129,8 @@
 (defn new-target-position-string [level start-position target-position]
   (let [start-string (get-position-string level start-position)
         target-string (get-position-string level target-position)]
-    (if (and (= (:boulder (levels/features)) start-string)
-             (= (:hole (levels/features)) target-string))
+    (if (and (= (:boulder levels/features) start-string)
+             (= (:hole levels/features) target-string))
       (get-cells-position-string (:floor level) target-position)
       start-string)))
 
