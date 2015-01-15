@@ -109,6 +109,15 @@
       (levels/get-cells-position-string (:floor level) target-position)
       start-string)))
 
+(defn set-player-position [level position-1 position-2]
+  (let [[player-position?] (filterv (fn [pos]
+                                      (= (:player levels/features)
+                                         (levels/get-position-string level pos)))
+                                    [position-1 position-2])]
+    (if player-position?
+      (assoc level :player-position player-position?)
+      level)))
+
 (defn transform-level
   "Assumes caller has already checked validity of transformation with
 legal-transformation?"
@@ -120,7 +129,10 @@ legal-transformation?"
                                                         new-target-position-string)
         new-level                  (set-position-string new-level
                                                         start-position
-                                                        new-start-position-string)]
+                                                        new-start-position-string)
+        new-level                  (set-player-position new-level
+                                                        start-position
+                                                        target-position)]
     new-level))
 
 (defn maybe-transform-level [level start-position direction]
