@@ -1,12 +1,13 @@
 (ns nhss.ui
   (:require-macros [cljs.core.async.macros :as am])
-  (:require [goog.events         :as events]
-            [cljs.core.async     :as a]
-            [clojure.string      :as string]
-            [nhss.levels         :as levels]
-            [nhss.transformation :as transformation]
-            [om.core             :as om :include-macros true]
-            [om.dom              :as dom]
+  (:require [goog.events              :as events]
+            [cljs.core.async          :as a]
+            [clojure.string           :as string]
+            [nhss.levels              :as levels]
+            [nhss.standard-level-data :as standard-level-data]
+            [nhss.transformation      :as transformation]
+            [om.core                  :as om :include-macros true]
+            [om.dom                   :as dom]
 
             [nhss.util :refer [js-trace! trace!]])
   (:import [goog.events KeyCodes]))
@@ -40,65 +41,60 @@
   (get (merge (movement-keys) (undo-keys)) (.-keyCode e) :key-not-found))
 
 (defn key->command [key]
-  {:level (:current-level @app-state)
+  {:level     (:level @app-state)
    :direction key})
 
-(defn level->code-forest [level]
-  (let [cells (:cells level)
-        cell-codes (map (fn [row]
-                         (map (fn [cell]
-                                (dom/code (cond (= (:player levels/features) cell)
-                                                #js {:className "cell player"}
+(defn cell-code [cell]
+  (dom/code (cond (= (:player levels/features) cell)
+                  #js {:className "cell player"}
 
-                                                (= (:hole levels/features) cell)
-                                                #js {:className "cell trap"}
+                  (= (:hole levels/features) cell)
+                  #js {:className "cell trap"}
 
-                                                (#{(:up-stair levels/features)
-                                                   (:down-stair levels/features)}
-                                                 cell)
-                                                #js {:className "cell stair"}
+                  (#{(:up-stair levels/features)
+                     (:down-stair levels/features)}
+                   cell)
+                  #js {:className "cell stair"}
 
-                                                ((:wall levels/features)
-                                                 cell)
-                                                #js {:className "cell wall"}
+                  ((:wall levels/features)
+                   cell)
+                  #js {:className "cell wall"}
 
-                                                (= (:door levels/features)
-                                                   cell)
-                                                #js {:className "cell door"}
+                  (= (:door levels/features)
+                     cell)
+                  #js {:className "cell door"}
 
-                                                (= (:scroll levels/features)
-                                                   cell)
-                                                #js {:className "cell scroll"}
+                  (= (:scroll levels/features)
+                     cell)
+                  #js {:className "cell scroll"}
 
-                                                :default
-                                                #js {:className "cell"})
-                                          cell))
-                              row))
-                       cells)]
-    (flatten (interleave cell-codes (repeat (dom/br nil))))))
+                  :default
+                  #js {:className "cell"})
+            cell))
 
-(defn make-level-view [new-level-chan]
-  (fn [app owner]
-    (reify
-      om/IWillMount
-      (will-mount [_]
-        (am/go-loop []
-          (let [new-level (a/<! new-level-chan)]
-            (om/transact! app (fn [_]
-                                (:level new-level))))
-          (recur)))
-      om/IRender
-      (render [_]
-        (apply dom/div #js {:id "level"} (level->code-forest app))))))
-
-(defn level-option-view []
+(def cell-view
   (fn [app owner]
     (reify
       om/IRender
       (render [_]
-        (dom/option #js {:value (:title app)} (:title app))))))
+        (cell-code app)))))
 
-(defn level-select-view []
+(def row-view
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (apply dom/div #js {:className "row"}
+               (om/build-all cell-view app))))))
+
+(def level-option-view
+  (fn [title owner]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/option #js {:value title} title)))))
+
+(def level-select-view
   (fn [app owner]
     (reify
       om/IRender
@@ -106,30 +102,64 @@
         (apply dom/select #js {:onChange (fn [e]
                                            (let [level-title (-> e .-target .-value)
                                                  level-id    (keyword (last (string/split level-title #" ")))]
-                                             (swap! app-state assoc :current-level (level-id (:levels @app-state)))))
-                               :value (:title (:current-level app))}
-               (om/build-all (level-option-view) (sort-by :title (def *charnock* (vals (:levels app))))))))))
+                                             (swap! app-state assoc :level (level-id standard-level-data/levels))))
+                               :value    (:current-title app)}
+               (om/build-all level-option-view (:titles app)))))))
 
-(defn make-app-view [new-level-chan]
+(def title-view
   (fn [app owner]
     (reify
       om/IRender
       (render [_]
         (dom/div nil
-                 (om/build (level-select-view) app)
-                 (om/build (make-level-view new-level-chan) (:current-level app)))))))
+                 (dom/code #js {:className "title"} app))))))
+
+(def info-view
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/div nil
+                 (dom/code #js {:className "info"} app))))))
+
+(def level-view
+  (fn [app owner]
+    (reify
+      om/IWillMount
+      (will-mount [_]
+        (am/go-loop []
+          (let [new-level (a/<! (:new-level-chan app))]
+            (om/update! app [:level] (:level new-level)))
+          (recur)))
+      om/IRender
+      (render [_]
+        (apply dom/div #js {:id "level"}
+               (om/build title-view (:title (:level app)))
+               (om/build info-view (:info (:level app)))
+               (om/build-all row-view (:cells (:level app))))))))
+
+(def app-view
+  (fn [app owner]
+    (reify
+      om/IRender
+      (render [_]
+        (dom/div nil
+                 (om/build level-select-view {:current-title (:title (:level app))
+                                              :titles        (:titles app)})
+                 (om/build level-view app))))))
 
 ;;; TODO this is getting out of hand
-(defn init [levels new-level-chan]
-  (def app-state (atom {:current-level  (:2a levels)
-                        :levels         levels}))
-  (def app-history (atom [(:current-level @app-state)]))
+(defn init [new-level-chan]
+  (def app-state (atom {:level          (:2a standard-level-data/levels)
+                        :new-level-chan new-level-chan
+                        :titles         (mapv :title (sort (vals standard-level-data/levels)))}))
+  (def app-history (atom [(:level @app-state)]))
   (add-watch app-state :history
              (fn [_ _ _ new-state]
-               (when-not (= (last @app-history) (:current-level new-state))
-                 (swap! app-history conj (:current-level new-state)))))
+               (when-not (= (last @app-history) (:level new-state))
+                 (swap! app-history conj (:level new-state)))))
   (om/root
-   (make-app-view new-level-chan)
+   app-view
    app-state
    {:target (. js/document (getElementById "app"))})
   (let [event-chan                           (a/chan)
@@ -145,6 +175,6 @@
         (when (> (count @app-history) 1)
           (swap! app-history pop)
           (swap! app-state (fn [app-state]
-                             (assoc app-state :current-level (last @app-history))))))
+                             (assoc app-state :level (last @app-history))))))
       (recur))
     command-chan))
