@@ -1,4 +1,4 @@
-(defproject nhss "0.5.0"
+(defproject nhss "0.6.0-SNAPSHOT"
   :description  "An implementation of nhss in clojurescript"
   :url          "https://github.com/timvisher/nhss-cljs"
   :license      {:name "CC-BY"
