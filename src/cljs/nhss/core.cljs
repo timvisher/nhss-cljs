@@ -14,7 +14,6 @@
   (ws-repl/connect "ws://localhost:9001"
                    :print #{:repl :console}))
 
-(let [levels         standard-level-data/levels
-      new-level-chan (a/chan)
-      command-chan   (ui/init levels new-level-chan)]
+(let [new-level-chan (a/chan)
+      command-chan   (ui/init new-level-chan)]
   (transformation/make-nhss-process command-chan new-level-chan))

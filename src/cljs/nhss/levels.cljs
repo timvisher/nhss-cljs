@@ -15,7 +15,7 @@
                   (:info level)
                   (string/join "\n" (map string/join (:cells level)))))
 
-(defn features []
+(def features
   {:down-stair \>
    :up-stair   \<
    :space      \·
@@ -26,3 +26,10 @@
    :scroll     \?
    :empty      \space
    :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
+
+(defn get-cells-position-string [cells position]
+  (let [[x y] position]
+    (nth (nth cells y) x)))
+
+(defn get-position-string [level position]
+  (get-cells-position-string (:cells level) position))
