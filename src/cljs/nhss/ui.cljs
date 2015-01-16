@@ -106,14 +106,6 @@
                                :value    (:current-title app)}
                (om/build-all level-option-view (:titles app)))))))
 
-(def title-view
-  (fn [app owner]
-    (reify
-      om/IRender
-      (render [_]
-        (dom/div nil
-                 (dom/code #js {:className "title"} app))))))
-
 (def info-view
   (fn [app owner]
     (reify
@@ -134,7 +126,6 @@
       om/IRender
       (render [_]
         (apply dom/div #js {:id "level"}
-               (om/build title-view (:title (:level app)))
                (om/build info-view (:info (:level app)))
                (om/build-all row-view (:cells (:level app))))))))
 
