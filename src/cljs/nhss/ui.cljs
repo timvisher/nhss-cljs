@@ -103,6 +103,8 @@
                                            (let [level-title (-> e .-target .-value)
                                                  level-id    (keyword (last (string/split level-title #" ")))]
                                              (swap! app-state assoc :level (level-id standard-level-data/levels))))
+                               :onKeyDown (fn [e]
+                                            (.preventDefault e))
                                :value    (:current-title app)}
                (om/build-all level-option-view (:titles app)))))))
 
