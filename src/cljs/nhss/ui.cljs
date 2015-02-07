@@ -100,9 +100,11 @@
       om/IRender
       (render [_]
         (apply dom/select #js {:onChange (fn [e]
-                                           (let [level-title (-> e .-target .-value)
-                                                 level-id    (keyword (last (string/split level-title #" ")))]
+                                           (let [level-title (.. e -target -value)
+                                                 level-id    (keyword level-title)]
                                              (swap! app-state assoc :level (level-id standard-level-data/levels))))
+                               :onKeyDown (fn [e]
+                                            (.preventDefault e))
                                :value    (:current-title app)}
                (om/build-all level-option-view (:titles app)))))))
 
@@ -141,9 +143,9 @@
 
 ;;; TODO this is getting out of hand
 (defn init [new-level-chan]
-  (def app-state (atom {:level          (:2a standard-level-data/levels)
+  (def app-state (atom {:level          ((keyword "NetHack Sokoban 2a") standard-level-data/levels)
                         :new-level-chan new-level-chan
-                        :titles         (mapv :title (sort (vals standard-level-data/levels)))}))
+                        :titles         (mapv :title (sort-by :title (vals standard-level-data/levels)))}))
   (def app-history (atom [(:level @app-state)]))
   (add-watch app-state :history
              (fn [_ _ _ new-state]

@@ -1,4 +1,4 @@
-(defproject nhss "0.5.0"
+(defproject nhss "0.6.0"
   :description  "An implementation of nhss in clojurescript"
   :url          "https://github.com/timvisher/nhss-cljs"
   :license      {:name "CC-BY"
@@ -18,4 +18,9 @@
   :repl-options {:nrepl-middleware [cemerick.piggieback/wrap-cljs-repl]}
   :cljsbuild    {:builds [{:source-paths ["src/cljs"]
                            :compiler     {:optimizations :whitespace
-                                          :pretty-print  true}}]})
+                                          :pretty-print  true
+                                          :output-to     "target/nhss.js"}}
+                          {:source-paths ["src/cljs"]
+                           :compiler     {:optimizations :advanced
+                                          :pretty-print  false
+                                          :output-to     "target/nhss-min.js"}}]})
