@@ -18,14 +18,14 @@
 (def features
   {:down-stair \>
    :up-stair   \<
-   :space      \·
+   :space      #{\· \.}
    :boulder    \0
    :hole       \^
    :player     \@
    :door       \+
    :scroll     \?
    :empty      \space
-   :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│}})
+   :wall       #{\┴ \┼ \┤ \┌ \├ \─ \└ \┐ \┬ \┘ \│ \- \|}})
 
 (defn get-cells-position-string [cells position]
   (let [[x y] position]
